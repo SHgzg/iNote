@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "My Note",
   description: "a little bit note",
-  base:"/repo/",
+  base:"/iNote/",
   // srcDir: './dist',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
