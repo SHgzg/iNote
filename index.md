@@ -3,8 +3,8 @@
 layout: home
 
 hero:
-  name: "My Note"
-  text: "a little bit note"
+  name: "My Awesome Project"
+  text: "A VitePress Site"
   tagline: My great project tagline
   actions:
     - theme: brand
@@ -15,7 +15,7 @@ hero:
       link: /api-examples
 
 features:
-  - title: Feature Ad
+  - title: Feature A
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
   - title: Feature B
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
