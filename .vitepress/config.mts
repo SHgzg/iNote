@@ -16,10 +16,10 @@ export default defineConfig({
     nav: [
 
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide' },
-      { text: 'Config', link: '/config' },
-      { text: 'Changelog', link: 'https://github.com/...' },
-      { text: 'Examples', link: '/markdown-examples' }
+      // { text: 'Guide', link: '/guide' },
+      // { text: 'Config', link: '/config' },
+      // { text: 'Changelog', link: 'https://github.com/...' },
+      // { text: 'Examples', link: '/markdown-examples' }
     ],
     sidebar,
     socialLinks: [

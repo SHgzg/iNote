@@ -1,12 +1,12 @@
 import { readdirSync, statSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, extname, join, relative } from "node:path";
 
 
   const ROOT_PATH = join(dirname(import.meta.filename), '../../notes')
 
 function filePath2Link(filePath:string):LinkItem {
     const link = "/" + relative(ROOT_PATH, filePath);
-    const text = "/" + basename(filePath);
+    const text = basename(filePath,extname(filePath));
     return { link, text }
 }
 
