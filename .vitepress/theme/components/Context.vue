@@ -1,6 +1,7 @@
 <template>
   <div class="catalog-container">
     <h1 class="catalog-title">目录</h1>
+    {{ notes }}
     <ul class="catalog-list">
       <li v-for="(item, index) in catalogItems" :key="index" class="catalog-item">
         <a :href="item.link" class="catalog-link">{{ item.name }}</a>
@@ -10,16 +11,40 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { data as notes } from '../notes.data'
+import { useData } from 'vitepress'
+
+const {theme,page} =useData()
+console.log(page.value);
+// console.log(theme.value.sidebar);
+// [
+//   { name: '第一章：介绍', link: '#chapter1' },
+//   { name: '第二章：基础知识', link: '#chapter2' },
+//   { name: '第三章：进阶技巧', link: '#chapter3' },
+//   { name: '第四章：实战案例', link: '#chapter4' },
+//   { name: '第五章：总结与展望', link: '#chapter5' }
+// ]
 
 // 目录数据数组
-const catalogItems = ref([
-  { name: '第一章：介绍', link: '#chapter1' },
-  { name: '第二章：基础知识', link: '#chapter2' },
-  { name: '第三章：进阶技巧', link: '#chapter3' },
-  { name: '第四章：实战案例', link: '#chapter4' },
-  { name: '第五章：总结与展望', link: '#chapter5' }
-]);
+const catalogItems = computed(()=>{
+    const relativePath = page.value.relativePath
+    const sidebar = theme.value.sidebar
+    const res = Object.keys(sidebar).map(key=>{
+        console.log(key);
+        
+        if (relativePath.match(key)) {
+            return sidebar[key]
+        }
+        return null
+    }).filter(Boolean)
+    console.log(res);
+    
+
+    return res
+}
+);
+
 </script>
 
 <style scoped>
