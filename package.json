@@ -7,6 +7,10 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.10",
+    "@types/yamljs": "^0.2.34",
     "vitepress": "^1.6.3"
+  },
+  "dependencies": {
+    "yamljs": "^0.3.0"
   }
 }
