@@ -11,7 +11,7 @@ features:
         link: /javascript\index.md
     -
         title: TypeScript
-        details: 'My TypeScript study notes'
+        details: 'My JavaScript study notes'
         link: /typescript\index.md
 
 ---
