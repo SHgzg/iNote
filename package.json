@@ -1,16 +1,11 @@
 {
   "type": "module",
   "scripts": {
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "dev": "rspress dev",
+    "build": "rspress build",
+    "preview": "rspress preview"
   },
   "devDependencies": {
-    "@types/node": "^24.0.10",
-    "@types/yamljs": "^0.2.34",
-    "vitepress": "^1.6.3"
-  },
-  "dependencies": {
-    "yamljs": "^0.3.0"
+    "rspress": "^1.45.0"
   }
 }
