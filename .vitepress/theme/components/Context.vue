@@ -30,13 +30,12 @@ const menuItems = props?.menuItems ? props.menuItems
     const res = Object.keys(sidebar).map(key => {
       const flag = key.slice(1, -1)
       if (relativePath.startsWith(flag)) {
-        return sidebar[key]
+        return sidebar[key].map(item=>({...item,link:("/iNote" + item.link).replace(/.md/,"")}))
       }
       return null
     })
       .filter(Boolean)
       .flat()
-
     return res
   });
 
@@ -46,8 +45,9 @@ const menuItems = props?.menuItems ? props.menuItems
 <style scoped>
 .simple-catalog {
   max-width: 800px;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 225px);
   margin: 0 auto;
+  margin-top: 20px;
   padding: 20px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
   background-color: #ffffff;
