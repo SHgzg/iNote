@@ -1,0 +1,1 @@
+import * as secretConf from "./encrypted.json" with { type: 'json' }
