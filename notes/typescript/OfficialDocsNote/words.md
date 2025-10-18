@@ -251,4 +251,115 @@ Primitives 是构成程序的简单数据构建块，其不可变性和按值存
 ### 💎 总结
 `Explicitly` 是一个非常重要的词汇，它强调的是一种**开诚布公、清晰直接、不含糊其辞的表达方式**。无论是在技术文档中要求精确的“显式”声明，还是在法律条文、合同或日常交流中需要明确权责、避免误解时，使用 `explicitly` 都能有效地传递出“此事已明确说明，不容置疑”的信号 。
 
-希望以上解析能帮助您全面掌握这个单词！如果您想了解它与 `implicitly` 的对比，或者练习在特定语境下使用它，请随时告诉我。
+希望以上解析能帮助您全面掌握这个单词！如果您想了解它与 `implicitly` 的对比，或者练习在特定语境下使用它，请随时告诉我。  
+
+在英语中，**along with** 是一个常用的介词短语，核心含义是“**和……一起；连同……；随着**”。它用于表示伴随、附加或并列的关系。以下是对其用法的详细解析。
+
+### 📚 **核心含义与用法**
+`along with` 的主要功能是连接两个或多个成分，表明它们以某种方式相关联或一同出现。其基本意义是“和……一起”、“连同……一起”、“随着”以及“除……以外（还）”。
+
+- **表示伴随或一同进行**：这是最常见的用法，表示某人或某物与另一人/物一起行动或出现。
+  - 例句：*She came to dinner **along with** her boyfriend.* (她和她的男朋友一道来用餐。)
+- **表示附加或补充**：意为“除了……之外（还）”、“以及”，用于引出一个额外的信息或项目。
+  - 例句：*The students are studying books, magazines, newspapers, **along with** other materials.* (学生们正在学习书籍、杂志、报纸，以及其他资料。)
+- **表示同步发生**：描述两个事件或情况同时发生，意为“随着”。
+  - 例句：*A significant rise in sales **along with** an increase in market share has contributed to the company’s success.* (销售的大幅增长，加上市场份额的增加，共同促进了公司的成功。)
+
+### ⚠️ **重要语法规则**
+使用 `along with` 时，有一个关键的语法规则需要注意，即“**就远原则**”。
+
+- **主谓一致**：当 `along with` 连接两个主语时，谓语动词的单复数形式需要与**第一个主语**保持一致，而不是与 `along with` 后面的宾语一致。
+  - 例句：*The CEO, **along with** several managers, **is** attending the conference.* (首席执行官，连同几位经理，**正在**参加会议。)
+  - 解析：这个句子的真正主语是单数的 “The CEO”，因此谓语动词用 “is”，而不是与复数 “managers” 一致。
+
+### 🔤 **常见搭配与短语**
+`along with` 常与一些动词构成固定搭配，表达特定的含义。
+
+| 搭配 | 含义 | 例句 |
+| :--- | :--- | :--- |
+| **get along with** | 与...和睦相处 | *How are you **getting along with** your classmates?* (你和班上同学相处得如何？) |
+| **go along with** | 赞同；陪同...一起去 | *I can't **go along with** your view.* (我不能赞同你的观点。) |
+| **come along with** | 随同，和……一起来 | *He **came along with** his friends.* (他和几个朋友一同来。) |
+| **tag along with** | (未经邀请)跟着去 | *So of course, they **tagged along with** us.* (自然而然地，他们就跟着我走了。) |
+
+### 💎 **总结**
+总而言之，`along with` 是一个表达伴随、附加关系的实用短语。记住它的**就远原则**对于主谓一致的正确使用至关重要。在技术文档或日常交流中，它都能帮助你的表达更加清晰和地道。
+
+希望这些解释能帮助你更好地理解和使用 "along with"！
+
+以下是为您整理的关于单词 **occurred** 的详细解析。它是动词 `occur` 的过去式和过去分词形式。
+
+### 📚 单词释义与发音
+- **单词**: occurred
+- **原形**: occur
+- **美式音标**: [əˈkɝd]
+- **英式音标**: [əˈkɜːd]
+- **核心含义**: （尤指意外事件）发生；存在；被想到
+
+### 📖 深度解析
+| 项目 | 内容 |
+| :--- | :--- |
+| **中文释义** | v. 发生；出现；存在；被想到（occur 的过去式和过去分词） |
+| **英文释义** | v. Took place; happened; came into existence; was found to exist; came to mind |
+| **词根词缀** | 源自拉丁语 `occurens`，由 `ob-`（朝向）和 `currere`（跑）组合而成，字面意思为“跑到面前”，引申为“发生、出现”。 |
+| **技术场景例句** | A runtime error **occurred** when the function tried to access an undefined variable. （当函数试图访问一个未定义的变量时，发生了一个运行时错误。） |
+| **日常生活例句** | The accident **occurred** on a sharp bend in the road. （事故发生在道路的一个急转弯处。） |
+| **同义词** | **happened**（发生，普通用词）、**took place**（发生，常指有计划的事件） |
+| **反义词** | **was prevented**（被阻止）、**did not happen**（未发生） |
+
+### 💡 核心用法与搭配
+`occurred` 的核心含义是指事件（尤其是意外或计划外的事件）“发生”，或想法“浮现于脑海”。其常见用法包括：
+
+1.  **指事件发生**：常用作不及物动词，主语是发生的事件本身。
+    - 例句：The meeting **occurred** last Monday. （会议于上周一举行。）
+
+2.  **表示“被想到”**：常用句型为 `It occurred to sb that...` 或 `It occurred to sb to do sth`，意为“某人想到了……”。
+    - 例句：It suddenly **occurred** to her that she had left the keys inside. （她突然想起把钥匙落在里面了。）
+
+3.  **表示“存在”**：用于正式语境，表示某物存在于某处。
+    - 例句：This phenomenon **occurs** naturally in only a few places. （这种现象自然状态下仅存在于少数几个地方。）
+
+### 💎 总结
+`Occurred` 是一个描述事件发生或想法产生的常用动词，其核心在于表达的**客观性**，常指偶然发生或按规律出现的事件。在技术文档中常用于描述错误、事件或现象的发生，在日常交流中则用于叙述已发生的事件或突然产生的念头。
+
+希望以上解析能帮助您掌握这个单词的用法。如果想了解 `occur` 其他形式（如 `occurs`, `occurring`）的用法，或者练习造句，请随时告诉我。
+
+以下是为您整理的关于单词 **informs** 的详细解析。
+
+### 📚 单词释义与发音
+- **单词**: informs
+- **原形**: inform
+- **美式音标**: [ɪnˈfɔːrmz]
+- **英式音标**: [ɪnˈfɔːmz]
+- **核心含义**: 告诉；通知；使了解；对…有影响（动词 `inform` 的第三人称单数形式）
+
+### 📖 深度解析
+| 项目 | 内容 |
+| :--- | :--- |
+| **中文释义** | v. 告诉；通知；使了解；预示；使充满  |
+| **英文释义** | v. Imparts knowledge of some fact, state of affairs, or event to someone; gives character or essence to something  |
+| **词根词缀** | 源自拉丁语 `informare`，由 `in-`（进入）和 `forma`（形态）构成，本意为“赋予形态”，引申为“使了解”、“形成概念”  |
+| **技术场景例句** | The system **informs** the user when the requested operation has been completed successfully. （当请求的操作成功完成后，系统会**通知**用户。） |
+| **日常生活例句** | "I just added a little soy sauce," he **informs** us. （“我就加了一点儿酱油，”他**告诉**我们。） |
+| **同义词** | **notifies**（正式通知），**tells**（告诉，通用词），**advises**（告知，建议） |
+| **反义词** | **conceals**（隐瞒），**misinforms**（误报） |
+
+### 💡 核心用法与搭配
+`informs` 的核心含义是**向某人传递信息或知识，或者某种特质、原则深刻地影响、塑造了某事物**。
+
+1.  **inform sb of / about sth**：将某事通知或告诉某人。
+    - 例句：Please **inform us of** any changes to the schedule. （如日程有变，请**通知**我们。）
+
+2.  **inform on / against sb**：告发或检举某人。
+    - 例句：He was reluctant to **inform on** his colleagues. （他不愿意告发他的同事。）
+
+3.  **sth informs sth**：（某种原则、思想或感觉）渗透、影响或塑造了某事物。
+    - 例句：A deep respect for nature **informs** all her work. （对自然的深深敬意**贯穿于**她的所有作品。）
+
+### ⚠️ 注意事项
+需要注意的是，**INFORMS**（全大写）也是一个专有名词缩写，特指美国的“运筹学和管理学研究协会”（Institute for Operations Research and the Management Sciences）。在阅读技术文献时，需根据上下文区分大小写以判断其具体含义。
+
+### 💎 总结
+`Informs` 作为 `inform` 的第三人称单数形式，主要含义是“通知”和“影响”。它在日常交流、技术文档和学术写作中都很常用，既能描述具体的告知行为，也能表达抽象的内在影响。理解其核心意象“赋予形态、塑造概念”有助于掌握其各种用法 。
+
+希望以上解析能帮助您全面掌握这个单词的用法！如果您想了解它在特定语境下的应用，或者练习用它造句，请随时告诉我。
