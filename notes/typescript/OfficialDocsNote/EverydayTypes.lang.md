@@ -200,7 +200,11 @@ async function getFavoriteNumber(): Promise<number> {
 ### Anonymous Functions
 
 Anonymous functions are a little bit different from function declarations. When a function appears in a place where TypeScript can determine how it's going to be called, the parameters of that function are automatically given types.
+> 匿名函数和函数声明有一些不同。当函数出现在一个TypeScript能推断出函数将会怎样被调用，函数的参数会自动的被赋予类型
 
+> 匿名函数与函数声明略有不同。当一个函数出现在 TypeScript 能够确定其调用方式的上下文中时，该函数的参数会自动被赋予类型。
+
+> determines
 Here's an example:
 
 ```typescript
@@ -218,17 +222,33 @@ names.forEach((s) => {
 ```
 
 Even though the parameter `s` didn't have a type annotation, TypeScript used the types of the `forEach` function, along with the inferred type of the array, to determine the type `s` will have.
+> 尽管参数 s没有类型注释，TypeScript使用了被推断出参数是数组类型的forEach函数的类型来决定 s将会有的类型
+
+> 尽管参数 s没有类型注解，TypeScript 仍根据 forEach函数的类型定义以及数组的推断类型，自动确定了参数 s应有的类型。
+
+> along with
 
 This process is called **contextual typing** because the context that the function occurred within informs what type it should have.
 
+>这个程序叫做上下文类型，因为上函数本身包含了它所需要的类型信息
+
+>这个过程被称为​​上下文类型（contextual typing）​​，因为函数所处的上下文会告知它应具有什么类型
+>
+
 Similar to the inference rules, you don't need to explicitly learn how this happens, but understanding that it does happen can help you notice when type annotations aren't needed. Later, we'll see more examples of how the context that a value occurs in can affect its type.
+> 和推到规则类型，你不需要可以学习上下文类型是怎么发生的，但是理解它确实发生了有助于你知道什么时候不需要类型注释。稍后，我们将看更多的变量所处的上下文怎样影响它的类型的例子。
 
 ## Object Types
 
 Apart from primitives, the most common sort of type you'll encounter is an **object type**. This refers to any JavaScript value with properties, which is almost all of them!
+> 作为基础类型的一部分，你会遇到的最常见的是 object类型，他能推断出几乎所有 JavaScript变量的属性
+
+> 除了原始类型之外，您最常遇到的一种类型就是​​对象类型​​。这指的是任何具有属性的 JavaScript 值，几乎所有的值都是如此！
 
 To define an object type, we simply list its properties and their types. For example, here's a function that takes a point-like object:
+> 要定义一个对象类型，我们简单地列出它的属性和属性的类型。举个例子，这是一个输入坐标地函数：
 
+> 要定义一个对象类型，我们只需列出其属性及其类型即可。例如，以下是一个接收点状对象作为参数的函数：
 ```typescript
 // The parameter's type annotation is an object type
 function printCoord(pt: { x: number; y: number }) {
@@ -241,10 +261,13 @@ printCoord({ x: 3, y: 7 });
 Here, we annotated the parameter with a type with two properties - `x` and `y` - which are both of type `number`. You can use `,` or `;` to separate the properties, and the last separator is optional either way.
 
 The type part of each property is also optional. If you don't specify a type, it will be assumed to be `any`.
+> 这里，我们为参数标注了一个包含两个属性的类型——x和 y——它们的类型都是 number。你可以使用 ,或 ;来分隔属性，并且无论哪种方式，最后一个分隔符都是可选的。
+每个属性的类型标注也是可选的。如果你不指定类型，它将被假定为 any。
 
 ### Optional Properties
 
 Object types can also specify that some or all of their properties are **optional**. To do this, add a `?` after the property name:
+> 对象类型还可以指定其部分或全部属性是​​可选的​​。要实现这一点，只需在属性名后添加一个 ?：
 
 ```typescript
 function printName(obj: { first: string; last?: string }) {
@@ -258,6 +281,10 @@ printName({ first: "Alice", last: "Alisson" });
 
 In JavaScript, if you access a property that doesn't exist, you'll get the value `undefined` rather than a runtime error. Because of this, when you read from an optional property, you'll have to check for `undefined` before using it.
 
+> 在 JavaScript中，如果你范文一个不存在的属性，你会得到一个 undefine而不是一个运行时错误。因此，当你读取一个可选属性是，需要在使用前检查 undefine
+
+> 在 JavaScript 中，如果您访问一个不存在的属性，您将得到值 undefined而不是运行时错误。正因如此，当您从一个可选属性中读取值时，在使用它之前必须检查其是否为 undefined。
+### Defining a Union Type
 ```typescript
 function printName(obj: { first: string; last?: string }) {
   // Error - might crash if 'obj.last' wasn't provided!
@@ -277,12 +304,23 @@ function printName(obj: { first: string; last?: string }) {
 ## Union Types
 
 TypeScript's type system allows you to build new types out of existing ones using a large variety of operators. Now that we know how to write a few types, it's time to start combining them in interesting ways.
+> TypeScript 的类型系统允许你用丰富的操作符来构建新的类型。至此我们已经会使用一些类型，是时候开始用有趣的方法组装他们了
 
+> TypeScript 的类型系统允许您使用种类繁多的操作符，基于现有类型来构建新类型。既然我们已经了解了如何编写一些基础类型，是时候开始以各种有趣的方式将它们组合起来了。
+
+> 
 ### Defining a Union Type
 
-The first way to combine types you might see is a **union type**. A union type is a type formed from two or more other types, representing values that may be any one of those types. We refer to each of these types as the union's **members**.
+The first way to combine types you might see is a **union type**. A union type is a type formed from two or more other types, representing values that may be any one of those types. We refer to each of these types as the union's
+> 你将看到的第一种组合类型是联合类型，一个联合类型是由两个或者多个其他类型构成，代表这个变量的类型可以是这些类型中的任意一个。我们将这些类型推断成一个联合的类型
+
+> 您可能遇到的第一种组合类型的方式是 ​​联合类型​​。联合类型是由两个或多个其他类型组合而成的类型，表示取值可以是这些类型中的任意一种。我们将这些组成类型中的每一个称为该联合类型的​​成员
+**members**.
 
 Let's write a function that can operate on strings or numbers:
+> 写一个能操作字符串和数字的函数
+
+> 让我们编写一个可以操作字符串或数字的函数。
 
 ```typescript
 function printId(id: number | string) {
@@ -299,6 +337,10 @@ printId({ myID: 22342 });
 ```
 
 The separator of the union members is allowed before the first element, so you could also write this:
+> 联合类型的分隔符允许卸载第一个元素前面，所以你可以这样写：
+
+> 联合类型成员的分隔符允许出现在第一个元素之前，因此你也可以这样写：
+
 
 ```typescript
 function printTextOrNumberOrBool(textOrNumberOrBool: | string | number | boolean) {
@@ -309,8 +351,14 @@ function printTextOrNumberOrBool(textOrNumberOrBool: | string | number | boolean
 ### Working with Union Types
 
 It's easy to provide a value matching a union type - simply provide a type matching any of the union's members. If you have a value of a union type, how do you work with it?
+> 提供一个符合联合类型的值是很简单的 - 只需提供一个类型匹配任何一个成员类型。如果有一个联合类型的值，你会怎样使用它？
+
+> 要提供一个匹配联合类型的值很容易——只需提供与联合类型中任意成员匹配的类型即可。但如果你有一个联合类型的值，该如何操作它呢？
 
 TypeScript will only allow an operation if it is valid for every member of the union. For example, if you have the union `string | number`, you can't use methods that are only available on `string`:
+> 如果它对联合类型的每一个成员都是合法的，TypeScript 仅允许一种操作操作符。举个例子，如果你有一个联合类型 string | number，你不能使用只对 string类型有效的方法。
+
+> TypeScript 只允许那些对联合类型中​​每一个成员​​都有效的操作。例如，如果你有一个 string | number类型的联合类型，你就不能使用仅存在于 string类型上的方法
 
 ```typescript
 function printId(id: number | string) {
@@ -321,8 +369,14 @@ function printId(id: number | string) {
 ```
 
 The solution is to **narrow** the union with code, the same as you would in JavaScript without type annotations. Narrowing occurs when TypeScript can deduce a more specific type for a value based on the structure of the code.
+> 收窄联合类型的方案和你在没有类型注释时会在 JavaScript中做的那样。当 TypeScript基于代码结构能推断出一个更确定的值的类型时，就会类型收窄
+
+> 解决方案是使用代码来​​缩小​​联合类型的范围，这与你在没有类型注解的 JavaScript 中所做的操作是相同的。当 TypeScript 能够根据代码的结构推断出一个值更具体的类型时，就会发生类型缩小
 
 For example, TypeScript knows that only a `string` value will have a `typeof` value `"string"`:
+> 举个例子， TypeScript知道只有 string 类型的值在 typeof操作下有值 string
+
+> 例如，TypeScript 知道只有 string类型的值其 typeof结果才会是 "string"： 
 
 ```typescript
 function printId(id: number | string) {
@@ -337,6 +391,9 @@ function printId(id: number | string) {
 ```
 
 Another example is to use a function like `Array.isArray`:
+> 另一个例子时使用像 Array.isArray这样的方法 
+
+> 
 
 ```typescript
 function welcomePeople(x: string[] | string) {
