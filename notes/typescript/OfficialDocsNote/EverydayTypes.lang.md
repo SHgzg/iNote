@@ -408,8 +408,14 @@ function welcomePeople(x: string[] | string) {
 ```
 
 Notice that in the `else` branch, we don't need to do anything special - if `x` wasn't a `string[]`, then it must have been a `string`.
+> 注意分支中的 else，我们不需要做任何特殊的操作 - 如果 x不是一个 string[]类型，一定是一个 string类型
+
+> 注意，在 else分支中，我们不需要做任何特殊处理——如果 x不是一个 string[]类型，那么它​​必定是​​一个 string。
 
 Sometimes you'll have a union where all the members have something in common. For example, both arrays and strings have a `slice` method. If every member in a union has a property in common, you can use that property without narrowing:
+> 有时你会有一个所有成员都有一些相似之处的联合类型。例如， arrays 和 strings 都有 slice方法。如果每一个成员都有一个相同的属性，那么你能在不使用类型缩窄的情况下使用它。
+
+> 有时，你会遇到一个​​所有成员都具有某些共同点​​的联合类型。例如，数组和字符串都拥有 slice方法。如果联合类型中的​​每一个成员都共享某个属性​​，那么你便可以​​无需收窄类型​​而直接使用该属性
 
 ```typescript
 // Return type is inferred as number[] | string
@@ -419,14 +425,25 @@ function getFirstThree(x: number[] | string) {
 ```
 
 It might be confusing that a union of types appears to have the intersection of those types' properties. This is not an accident - the name union comes from type theory. The union `number | string` is composed by taking the union of the values from each type. Notice that given two sets with corresponding facts about each set, only the intersection of those facts applies to the union of the sets themselves.
+> 可能一个类型的联合看起来有这些类型成员的交集会让人困惑。这并不意外 - 联合这个名字来自类型理论。number | string 这个联合类型由符合每一个类型的所有值组成。注意到给两个集合和每个集合对应的实际值，只有这些实际值的交集符合集合的联合。
+
+> 联合类型​​似乎具有​​其成员类型属性的​​交集​​，这点可能令人困惑。这并非偶然——"联合"这个名称源于类型理论。number | string这个联合类型是通过取​​每种类型所有值的并集​​而构成的。请注意，给定两个集合及各自对应的某些事实（属性），则​​仅有这些事实的交集适用于集合本身的并集​​。
 
 For example, if we had a room of tall people wearing hats, and another room of Spanish speakers wearing hats, after combining those rooms, the only thing we know about every person is that they must be wearing a hat.
+> 举个例子，如果有一个屋子里有一屋子戴帽子的高个子，另一个屋子里都是戴帽子且说说西班牙语的人，合并两个屋子之后，我们唯一能确定的关于每个人的一定是带着帽子。
+
+> 举个例子，假设一个房间里全是戴帽子的高个子，另一个房间里都是戴帽子且讲西班牙语的人。将这两个房间合并后，我们关于每个人唯一能确定的事实就是：他们一定都戴着帽子。
 
 ## Type Aliases
 
 We've been using object types and union types by writing them directly in type annotations. This is convenient, but it's common to want to use the same type more than once and refer to it by a single name.
 
 A **type alias** is exactly that - a **name for any type**. The syntax for a type alias is:
+> 我们已经通过直接写类型注释的使用了对象类型和联合类型。这样做很方便，通常情况下，我们不止一次的使用同一个类型时，希望用一个简单的名字来引用它。  
+一个类型别名正是如此 - 一个类型的名称。类型别名的语法是：
+
+> 我们之前一直通过直接将类型写入注解来使用对象类型和联合类型。这种方式虽然方便，但通常，当我们希望​​多次​​使用同一种类型时，会希望通过一个​​单一名称​​来引用它。  
+​​类型别名​​正是为此而生——它是​​任意类型​​的一个名称。定义类型别名的语法如下：
 
 ```typescript
 type Point = {
@@ -444,12 +461,18 @@ printCoord({ x: 100, y: 100 });
 ```
 
 You can actually use a type alias to give a name to any type at all, not just an object type. For example, a type alias can name a union type:
+> 实际上你可以使用类型别名给任意类型命名，而不仅仅是对象类型。例如，类型别名可以命名联合类型:
+
+> 实际上，你可以使用类型别名来为​​任意类型​​命名，而不仅限于对象类型。例如，类型别名可以为联合类型命名：
 
 ```typescript
 type ID = number | string;
 ```
 
 Note that aliases are only aliases - you cannot use type aliases to create different/distinct "versions" of the same type. When you use the alias, it's exactly as if you had written the aliased type. In other words, this code might look illegal, but is OK according to TypeScript because both types are aliases for the same type:
+> 需要注意别名只是别名 - 你不能用类型别名创造同一个类型的不同/相同的版本。当你使用别名，尤其是当你写了一个有别名的类型。总而言之，这段代码可能看起来不合法，但根据 TypeScript是合法的，因为两个类型都是同一个类型的别名。
+
+> 需要注意的​​是，类型别名仅仅是别名​​——你无法用它为同一类型创建不同或独立的“版本”。当你使用别名时，​​效果完全等同于​​你直接书写了被别名的那个原始类型。换句话说，下面这段代码看起来可能不合法，但在 TypeScript 中却是允许的，因为这两个类型实质上是同一类型的别名
 
 ```typescript
 type UserInputSanitizedString = string;
@@ -468,6 +491,9 @@ userInput = "new input";
 ## Interfaces
 
 An **interface declaration** is another way to name an object type:
+> 接口声明是另一种命名对象类型的方法
+
+> 接口声明是另一种命名对象类型的方法
 
 ```typescript
 interface Point {
