@@ -31,3 +31,10 @@ class Clock implements ClockInterface {
 interface Point2D { x: number; y: number; }
 interface Point3D extends Point2D { z: number; }
 ```
+
+ 当规则“过于严格”时怎么办？
+有时，两个复杂的类型在结构上其实是兼容的，但 TypeScript 无法直接识别。这时，规则可能会显得“过于保守”。在这种情况下，可以通过 ​​双重断言​​ 来绕过检查
+```
+// 目标：将 string 断言为 number（通常不推荐，但可能在某些特殊场景下需要）
+const x = "hello" as any as number; // ✅ 编译通过，但不安全
+```
