@@ -510,10 +510,16 @@ printCoord({ x: 100, y: 100 });
 ```
 
 Just like when we used a type alias above, the example works just as if we had used an anonymous object type. TypeScript is only concerned with the structure of the value we passed to `printCoord` - it only cares that it has the expected properties. Being concerned only with the structure and capabilities of types is why we call TypeScript a **structurally typed** type system.
+> 像我们上文中我们使用一个类型别名时，案例中的效果就和我们使用一个匿名的对象类型一样。TypeScript只关心我们传递给 printCoord的结构 - 他只关心是否有期望的成员。正是因为只关注类型的结构和性能，所以我们称 TypeScript是一个“结构类型”的类型系统。
+
+> 正如我们​​在上文​​使用类型别名时那样，该示例的效果​​就完全如同​​我们使用了匿名对象类型一样。TypeScript 只关心我们传递给 printCoord的值的​​结构​​——它只关心其​​是否具备预期的属性​​。​​正是由于​​TypeScript 只关注类型的​​结构和能特征​，我们才将其称为​​结构类型系统​​
 
 ### Differences Between Type Aliases and Interfaces
 
 Type aliases and interfaces are very similar, and in many cases you can choose between them freely. Almost all features of an `interface` are available in `type`, the key distinction is that a type cannot be re-opened to add new properties vs an interface which is always extendable.
+> 类型别名和接口很相似，在很多情况下你可以自由地选择使用他们。几乎所有 interface的特性在 type中也具备。不同点是 type不可以重新编辑来添加新的成员而 interface总是可拓展的。
+
+> 类型别名（type aliases）和接口（interfaces）非常相似，在大多数情况下你可以自由选择使用它们。interface的几乎所有特性在 type中也都可用，​​关键区别在于，一个类型别名在定义后无法被"重新打开"以添加新的属性，而接口则始终是可扩展的。
 
 | Interface | Type |
 |-----------|------|
@@ -525,12 +531,25 @@ You'll learn more about these concepts in later chapters, so don't worry if you 
 Prior to TypeScript version 4.2, type alias names may appear in error messages, sometimes in place of the equivalent anonymous type (which may or may not be desirable). Interfaces will always be named in error messages.
 
 For the most part, you can choose based on personal preference, and TypeScript will tell you if it needs something to be the other kind of declaration. If you would like a heuristic, use `interface` until you need to use features from `type`.
+> 你将会在后面的章节中学到更多相关的概念，如果你现在不能正确地理解所有概念也不用担心。 
+推荐使用 4.2版本的 TypeScript，命名类型别名在同一个地方有等价的匿名类型时（可能是你意料之外的）会出现在错误信息中。 Interface 总是会出现在错误信息中。  
+大多数场景中，你能根据个人偏好选择，TypeScript会告诉你是否需要其他类型的声明。如果你喜欢启发式的，使用 interface直到你必须使用 type的特性。
+
+> 你将在后续章节中学到更多相关概念，因此即使现在不能完全理解所有内容也无需担心。
+在 ​​TypeScript 4.2 版本之前​​，类型别名（type）的名称​​可能会​​出现在错误信息中，有时甚至会​​取代​​等价的匿名类型（这可能是好事，也可能不是）。而接口（interface）的名称则​​始终会​​出现在错误信息中。
+在大多数情况下，你可以根据个人偏好进行选择，TypeScript 也会在需要时提示你使用另一种声明方式。如果你需要一个选型启发式，那么建议​​优先使用 interface，直到你需要用到 type的某些特性时再改用 type​​。
+
 
 ## Type Assertions
 
 Sometimes you will have information about the type of a value that TypeScript can't know about. For example, if you're using `document.getElementById`, TypeScript only knows that this will return some kind of `HTMLElement`, but you might know that your page will always have an `HTMLCanvasElement` with a given ID.
 
 In this situation, you can use a **type assertion** to specify a more specific type:
+> 有时你会有TypeScript不知道的某个值的类型信息。例如。如果你使用 document.getElementById，TypeScript 只知道你将返回一个 HTMLElement，但你可能知道你的页面在给定 ID时总是返回 HTMLCanvasElement。  
+在这种情况下，你可以使用“类型断言”来指定更多特定的类型：
+
+> 有时，你可能会掌握某个值的、但 TypeScript ​​无法知晓​​的类型信息。例如，如果你使用 document.getElementById，TypeScript 只知道​​该方法返回​​某种 HTMLElement，但你可能确切地知道，你的页面上​​始终存在​​一个具有特定 ID 的 HTMLCanvasElement。 
+在这种情况下，你可以使用​​类型断言​​来指定一个​​更具体​​的类型:
 
 ```typescript
 const myCanvas = document.getElementById("main_canvas") as HTMLCanvasElement;
@@ -539,6 +558,11 @@ const myCanvas = document.getElementById("main_canvas") as HTMLCanvasElement;
 Like a type annotation, type assertions are removed by the compiler and won't affect the runtime behavior of your code.
 
 You can also use the angle-bracket syntax (except if the code is in a `.tsx` file), which is equivalent:
+> 就像类型注释，类型断言会被编译器删除，不会影响代码的运行时行为。  
+你能使用尖括号语法（期望代码在 .tsx文件中），等效于：
+
+> 与类型注解类似，类型断言会被编译器​​移除​​，不会影响代码的运行时行为。 
+你也可以使用​​尖括号语法​​（​​除非​​代码在 .tsx文件中），​​这两种语法是等效的​​
 
 ```typescript
 const myCanvas = <HTMLCanvasElement>document.getElementById("main_canvas");
@@ -547,6 +571,11 @@ const myCanvas = <HTMLCanvasElement>document.getElementById("main_canvas");
 > **Reminder:** Because type assertions are removed at compile-time, there is no runtime checking associated with a type assertion. There won't be an exception or `null` generated if the type assertion is wrong.
 
 TypeScript only allows type assertions which convert to a more specific or less specific version of a type. This rule prevents "impossible" coercions like:
+> 提示： 因为类型断言在编译时被删除，所以类型断言没有运行时检查。如果类型断言是错误的，不会有报错或生成 null  
+TypeScript 仅允许将类型转化为更具体或者更不具体的版本。
+
+> ​​提示：​​ 因为类型断言在编译时​​被移除​​，所以不会有任何与之相关的运行时检查。如果类型断言是错误的，不会抛出异常也不会生成 null。
+TypeScript 仅允许将类型转化为更具体​​或​​更不具体的版本。​​此规则用于防止那些“不可能”的强制转换，例如：
 
 ```typescript
 const x = "hello" as number;
@@ -554,6 +583,9 @@ const x = "hello" as number;
 ```
 
 Sometimes this rule can be too conservative and will disallow more complex coercions that might be valid. If this happens, you can use two assertions, first to `any` (or `unknown`, which we'll introduce later), then to the desired type:
+> 有时规则过于保守，而且不允许合法的更复杂的合法地强制转换。如果强制转换发生，你可以使用双重断言，第一个用 any（或者unknow，稍后将会介绍），然后得到想要地类型
+
+> 有时，这条规则可能​​过于保守​​，会阻止一些实际上可能有效的复杂转换。如果遇到这种情况，你可以使用​​两次断言​​：先断言为 any（或我们稍后会介绍的 unknown），然后再断言为所需的类型
 
 ```typescript
 const a = expr as any as T;
@@ -564,6 +596,11 @@ const a = expr as any as T;
 In addition to the general types `string` and `number`, we can refer to specific strings and numbers in type positions.
 
 One way to think about this is to consider how JavaScript comes with different ways to declare a variable. Both `var` and `let` allow for changing what is held inside the variable, and `const` does not. This is reflected in how TypeScript creates types for literals.
+> wile补充基本类型 string和 number，我们能在类型地位置引用指定地字符和数字  
+一种思考这种情况地方式是
+
+> 除了通用的 string和 number类型，我们还可以在类型位置上引用特定的字符串和数字。  
+理解这一点的一种方式是思考 JavaScript 中声明变量的不同方式。var和 let允许修改变量持有的值，而 const则不允许。TypeScript 为字面量创建类型的方式正体现了这一点
 
 ```typescript
 let changingString = "Hello World";
@@ -581,6 +618,7 @@ constantString;
 ```
 
 By themselves, literal types aren't very valuable:
+> 单独来看，字面量类型本身的价值并不大：
 
 ```typescript
 let x: "hello" = "hello";
@@ -591,6 +629,7 @@ x = "howdy";
 ```
 
 It's not much use to have a variable that can only have one value! But by combining literals into unions, you can express a much more useful concept - for example, functions that only accept a certain set of known values:
+> 一个只能有一个值的变量并没有太大用处！但通过将字面量类型组合成联合类型，你可以表达一个更有用的概念——例如，创建只能接受一组特定已知值的函数：
 
 ```typescript
 function printText(s: string, alignment: "left" | "right" | "center") {
@@ -603,6 +642,7 @@ printText("G'day, mate", "centre");
 ```
 
 Numeric literal types work the same way:
+> 数字字面量类型的工作方式与此相同：
 
 ```typescript
 function compare(a: string, b: string): -1 | 0 | 1 {
@@ -611,6 +651,7 @@ function compare(a: string, b: string): -1 | 0 | 1 {
 ```
 
 Of course, you can combine these with non-literal types:
+> 当然，你也可以将它们与非字面量类型结合使用：
 
 ```typescript
 interface Options {
@@ -628,11 +669,14 @@ configure("automatic");
 ```
 
 There's one more kind of literal type: boolean literals. There are only two boolean literal types, and as you might guess, they are the types `true` and `false`. The type `boolean` itself is actually just an alias for the union `true | false`.
+> 还有一种字面量类型: 布尔字面量类型. 只有两种布尔类型字面量。正如你所猜测的,就是 true和 false这两种类型。boolean 类型本身只是联合类型 true | false的别名.
+
+> 布尔字面量类型还有最后一种：​​布尔字面量类型​​。它只有两种类型，正如你可能猜到的，就是 true和 false这两种类型。boolean类型本身实际上只是 true | false的联合类型的别名
 
 ### Literal Inference
 
 When you initialize a variable with an object, TypeScript assumes that the properties of that object might change values later. For example, if you wrote code like this:
-
+> 当你用对象初始化一个变量, TypeScript 假定该对象的属性稍后可能会改变.例如,如果你写了这样的代码:
 ```typescript
 const obj = { counter: 0 };
 if (someCondition) {
@@ -643,6 +687,7 @@ if (someCondition) {
 TypeScript doesn't assume the assignment of `1` to a field which previously had `0` is an error. Another way of saying this is that `obj.counter` must have the type `number`, not `0`, because types are used to determine both reading and writing behavior.
 
 The same applies to strings:
+> 
 
 ```typescript
 declare function handleRequest(url: string, method: "GET" | "POST"): void;
