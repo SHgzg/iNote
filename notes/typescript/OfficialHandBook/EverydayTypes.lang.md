@@ -687,7 +687,11 @@ if (someCondition) {
 TypeScript doesn't assume the assignment of `1` to a field which previously had `0` is an error. Another way of saying this is that `obj.counter` must have the type `number`, not `0`, because types are used to determine both reading and writing behavior.
 
 The same applies to strings:
-> 
+> TypeScript 不会认为初始值为 0赋值 1是一个错误.另一种表述方式是 obj.counter一定是 number类型而不是 0类型，因为类型系统一般要同时考虑读写行为。  
+这一规则同样适用于字符串：
+
+> TypeScript 不会将之前为 0的字段赋值为 1的情况视为错误。另一种解释是，obj.counter的类型必须是 number，而不是 0，因为类型系统需要同时确定读取和写入行为。 
+这一规则同样适用于字符串：
 
 ```typescript
 declare function handleRequest(url: string, method: "GET" | "POST"): void;
@@ -700,6 +704,11 @@ handleRequest(req.url, req.method);
 In the above example `req.method` is inferred to be `string`, not `"GET"`. Because code can be evaluated between the creation of `req` and the call of `handleRequest` which could assign a new string like `"GUESS"` to `req.method`, TypeScript considers this code to have an error.
 
 There are two ways to work around this. You can change the inference by adding a type assertion in either location:
+> 上述案例中 req.method 被推断为 string类型，而不是 字面量类型"GET"。因为代码能识别 req的创建和 可能会赋像新值，如赋值 “GUESS”给req.method的handleRequest的调用 ，TypeScript认为这样的代码是错误的。   
+这种情况下有两种方法解决。你能通过在其中一个地方添加类型断言改变类型推断：
+
+>在上面的例子中，req.method被推断为 string类型，而不是字面量类型 "GET"。这是因为在创建 req对象和调用 handleRequest函数之间，代码可能会执行其他操作（例如给 req.method重新赋值为 "GUESS"这样的字符串），因此 TypeScript 认为这段代码存在类型错误。
+有两种方法可以解决这个问题。你可以通过以下任一方式添加类型断言来改变类型推断： 
 
 ```typescript
 // Change 1:
@@ -711,27 +720,36 @@ handleRequest(req.url, req.method as "GET");
 Change 1 means "I intend for `req.method` to always have the literal type `"GET"`", preventing the possible assignment of `"GUESS"` to that field after. Change 2 means "I know for other reasons that `req.method` has the value `"GET"`".
 
 You can use `as const` to convert the entire object to be type literals:
+> 改动1意味着“我打算让 req.method始终有字面量类型 "GET"，避免该字段可能被赋值成"Guess"”。改动2意味着“我了解 req.method的值就是"GET"的其它原因”。  
+你可以使用 as const将整个对象转换为字面量类型：
 
+> 改动1意味着“我期望 req.method始终具有字面量类型 "GET"”，从而避免之后可能将 "GUESS"赋值给该字段。改动2意味着“我基于其他原因确信 req.method的值就是 "GET"”。
+你可以使用 as const将整个对象转换为字面量类型：
 ```typescript
 const req = { url: "https://example.com", method: "GET" } as const;
 handleRequest(req.url, req.method);
 ```
 
 The `as const` suffix acts like `const` but for the type system, ensuring that all properties are assigned the literal type instead of a more general version like `string` or `number`.
+> as const 后缀的行为与 const相似，但对于类型系统来说，确保所有属性是字面量类型而不是像 string或者 number一样更普遍的版本
 
 ## `null` and `undefined`
 
 JavaScript has two primitive values used to signal absent or uninitialized value: `null` and `undefined`. TypeScript has two corresponding types by the same names. How these types behave depends on whether you have the `strictNullChecks` option on.
+> JavaScript有两个原始值用来表示未定义或者未赋值： null和 undefine。TypeScript 有两个同名的对应类型。这两个类型的行为取决于你是否启用了 strictNullChecks选项。
 
 ### `strictNullChecks` off
 
 With `strictNullChecks` off, values that might be `null` or `undefined` can still be accessed normally, and the values `null` and `undefined` can be assigned to a property of any type. This is similar to how languages without null checks (e.g. C#, Java) behave. The lack of checking for these values tends to be a major source of bugs; we always recommend people turn `strictNullChecks` on if it's practical to do so in their codebase.
+> strictNullChecks关闭时，一个可能是 null或者 undefined的值仍然能正常访问，而且值 null和undefine能被赋给一个 any类型的属性。这和没使用空值检查的语言行为一致(e.g. C#, Java)。缺乏对这些值的检查 bugs的主要来源；如果可以的话我们总是建议大家在他们的代码里打开 strictNullChecks选项。
 
 ### `strictNullChecks` on
 
 With `strictNullChecks` on, when a value is `null` or `undefined`, you will need to test for those values before using methods or properties on that value.
 
 Just like checking for `undefined` before using an optional property, we can use narrowing to check for values that might be `null`:
+> strictNullChecks打开时，当一个值是 null 或 undefined，你需要在访问该值的方法或者属性前检验它们  
+就像使用一个可选属性前检查 undefined一样，我们可以使用类型缩窄来检查可能是 null的值
 
 ```typescript
 function doSomething(x: string | null) {
@@ -765,6 +783,7 @@ You can read more about enums in the https://www.typescriptlang.org/docs/handboo
 ## Less Common Primitives
 
 It's worth mentioning the rest of the primitives in JavaScript which are represented in the type system. Though we will not go into depth here.
+> 
 
 ### `bigint`
 
