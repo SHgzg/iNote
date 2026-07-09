@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="关于" description="关于 iNote 这个个人博客。">
+  <section class="page-hero">
+    <p class="eyebrow">About</p>
+    <h1>关于 iNote</h1>
+    <p>这里是一个私人知识花园：不追求把所有内容写成教程，而是把真实的学习、阅读、生活和专业实践留下来。</p>
+  </section>
+  <section class="about-grid">
+    <div>
+      <h2>写作原则</h2>
+      <p>文章尽量保留问题背景、判断过程和下一步行动。短内容可以轻，长内容需要能被未来的自己重新使用。</p>
+    </div>
+    <div>
+      <h2>内容边界</h2>
+      <p>私房菜单记录可复现的餐桌经验；学习笔记和专业学习偏结构化；随笔、思考和生活观察保留更私人、更开放的部分。</p>
+    </div>
+    <div>
+      <h2>技术栈</h2>
+      <p>本站使用 Astro 构建，通过 GitHub Actions 自动部署到 GitHub Pages。文章内容放在内容集合里，Markdown 和 MDX 都可以继续扩展。</p>
+    </div>
+  </section>
+</BaseLayout>

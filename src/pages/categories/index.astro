@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CategoryCard from '../../components/CategoryCard.astro';
+import { categories } from '../../data/categories';
+import { getPublishedPosts } from '../../lib/posts';
+
+const posts = await getPublishedPosts();
+const counts = new Map(categories.map((category) => [category.slug, 0]));
+for (const post of posts) {
+  counts.set(post.data.category, (counts.get(post.data.category) ?? 0) + 1);
+}
+---
+
+<BaseLayout title="栏目" description="iNote 的全部文章栏目。">
+  <section class="page-hero page-hero--compact">
+    <p class="eyebrow">Categories</p>
+    <h1>栏目</h1>
+    <p>用固定栏目承载不同类型的写作，保持首页丰富，也让每一类内容有自己的入口。</p>
+  </section>
+  <section class="section-shell">
+    <div class="category-grid">
+      {categories.map((category) => <CategoryCard category={category} count={counts.get(category.slug)} />)}
+    </div>
+  </section>
+</BaseLayout>

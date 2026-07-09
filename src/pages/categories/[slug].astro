@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { categories } from '../../data/categories';
+import { assetPath, getPublishedPosts } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category }
+  }));
+}
+
+const { category } = Astro.props;
+const posts = (await getPublishedPosts()).filter((post) => post.data.category === category.slug);
+---
+
+<BaseLayout title={category.name} description={category.description}>
+  <section class="category-hero" style={`--accent:${category.accent}`}>
+    <div>
+      <p class="eyebrow">Category</p>
+      <h1>{category.name}</h1>
+      <p>{category.description}</p>
+      <span>{posts.length} 篇文章</span>
+    </div>
+    <img src={assetPath(category.image)} alt="" />
+  </section>
+  <section class="section-shell">
+    <div class="post-list">
+      {posts.map((post) => <ArticleCard post={post} />)}
+    </div>
+  </section>
+</BaseLayout>

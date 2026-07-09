@@ -1,0 +1,18 @@
+---
+import type { Category } from '../data/categories';
+import { assetPath, sitePath } from '../lib/posts';
+
+type Props = {
+  category: Category;
+  count?: number;
+};
+
+const { category, count = 0 } = Astro.props;
+---
+
+<a class="category-card" href={sitePath(`categories/${category.slug}/`)} style={`--accent:${category.accent}`}>
+  <img src={assetPath(category.image)} alt="" loading="lazy" />
+  <span>{count} 篇文章</span>
+  <h2>{category.name}</h2>
+  <p>{category.deck}</p>
+</a>

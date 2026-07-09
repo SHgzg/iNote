@@ -1,0 +1,96 @@
+---
+import '../styles/global.css';
+import { categories } from '../data/categories';
+import { sitePath } from '../lib/posts';
+
+type Props = {
+  title?: string;
+  description?: string;
+  image?: string;
+};
+
+const {
+  title = 'iNote',
+  description = '一个面向生活、学习、阅读与专业成长的个人博客。',
+  image
+} = Astro.props;
+
+const siteTitle = title === 'iNote' ? title : `${title} | iNote`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title="iNote RSS" href={sitePath('rss.xml')} />
+    <title>{siteTitle}</title>
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    {image && <meta property="og:image" content={image} />}
+    <script is:inline>
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = savedTheme || (prefersDark ? 'dark' : 'light');
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">跳到正文</a>
+    <header class="site-header">
+      <nav class="nav-shell" aria-label="主导航">
+        <a class="brand" href={sitePath()} aria-label="iNote 首页">
+          <span class="brand-mark">iN</span>
+          <span class="brand-copy">
+            <strong>iNote</strong>
+            <small>Personal field notes</small>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href={sitePath('categories/')}>栏目</a>
+          <a href={sitePath('archive/')}>归档</a>
+          <a href={sitePath('about/')}>关于</a>
+          <a href={sitePath('rss.xml')}>RSS</a>
+        </div>
+        <button class="theme-toggle" type="button" aria-label="切换深浅色主题" data-theme-toggle>
+          <span aria-hidden="true">◐</span>
+        </button>
+      </nav>
+      <div class="topic-strip" aria-label="栏目快捷入口">
+        {
+          categories.slice(0, 6).map((category) => (
+            <a href={sitePath(`categories/${category.slug}/`)} style={`--accent:${category.accent}`}>
+              {category.name}
+            </a>
+          ))
+        }
+      </div>
+    </header>
+    <main id="content">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div>
+        <strong>iNote</strong>
+        <p>把生活、学习和专业成长写成可回看的索引。</p>
+      </div>
+      <div class="footer-links">
+        <a href={sitePath('categories/')}>栏目</a>
+        <a href={sitePath('archive/')}>归档</a>
+        <a href="https://github.com/SHgzg/iNote">GitHub</a>
+      </div>
+    </footer>
+    <script is:inline>
+      const toggle = document.querySelector('[data-theme-toggle]');
+      toggle?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('theme', next);
+      });
+    </script>
+  </body>
+</html>

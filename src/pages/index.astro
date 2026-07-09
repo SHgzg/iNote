@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import { categories } from '../data/categories';
+import { assetPath, getPublishedPosts, sitePath } from '../lib/posts';
+
+const posts = await getPublishedPosts();
+const featured = posts.find((post) => post.data.featured) ?? posts[0];
+const latest = posts.filter((post) => post.id !== featured?.id).slice(0, 6);
+const counts = new Map(categories.map((category) => [category.slug, 0]));
+for (const post of posts) {
+  counts.set(post.data.category, (counts.get(post.data.category) ?? 0) + 1);
+}
+---
+
+<BaseLayout title="iNote" description="一个面向生活、学习、阅读与专业成长的个人博客。">
+  <section class="home-hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Personal knowledge garden</p>
+      <h1>iNote</h1>
+      <p class="hero-lede">把一日三餐、学习过程、阅读线索和专业成长写成可以继续使用的笔记。</p>
+      <div class="hero-actions">
+        <a class="button button--primary" href={sitePath('categories/')}>浏览栏目</a>
+        <a class="button button--ghost" href={sitePath('archive/')}>查看归档</a>
+      </div>
+    </div>
+    <figure class="hero-media">
+      <img src={assetPath('images/home-studio.svg')} alt="书桌、笔记本、餐盘和阅读材料组成的个人博客视觉图" />
+    </figure>
+  </section>
+
+  <section class="section-shell section-shell--tight">
+    <div class="section-heading">
+      <p class="eyebrow">Featured</p>
+      <h2>最近值得先读</h2>
+    </div>
+    {featured && <ArticleCard post={featured} mode="feature" />}
+  </section>
+
+  <section class="section-shell">
+    <div class="section-heading">
+      <p class="eyebrow">Categories</p>
+      <h2>栏目索引</h2>
+      <p>每个栏目都有独立主页，文章会按发布时间自动聚合。</p>
+    </div>
+    <div class="category-grid">
+      {categories.map((category) => <CategoryCard category={category} count={counts.get(category.slug)} />)}
+    </div>
+  </section>
+
+  <section class="section-shell">
+    <div class="section-heading">
+      <p class="eyebrow">Latest</p>
+      <h2>最近更新</h2>
+    </div>
+    <div class="post-grid">
+      {latest.map((post) => <ArticleCard post={post} />)}
+    </div>
+  </section>
+</BaseLayout>
