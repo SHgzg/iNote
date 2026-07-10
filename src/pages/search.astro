@@ -1,0 +1,216 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { sitePath } from '../lib/posts';
+---
+
+<BaseLayout title="搜索" description="搜索 iNote 的全部文章、栏目与标签。">
+  <section class="page-hero page-hero--compact">
+    <p class="eyebrow">Search</p>
+    <h1>搜索</h1>
+    <p>输入关键词，在全部文章的标题、摘要、栏目、标签和正文里查找相关内容。</p>
+  </section>
+
+  <section class="search-shell" data-search-root data-search-endpoint={sitePath('search.json')}>
+    <form class="search-form" role="search" data-search-form>
+      <label class="sr-only" for="site-search">搜索文章</label>
+      <input
+        id="site-search"
+        type="search"
+        name="q"
+        autocomplete="off"
+        placeholder="搜索文章、标签或栏目"
+        data-search-input
+      />
+      <button class="button button--primary" type="submit">搜索</button>
+    </form>
+
+    <div class="search-status" aria-live="polite" data-search-status>输入关键词开始搜索。</div>
+    <div class="search-results" data-search-results></div>
+  </section>
+
+  <script>
+    type SearchItem = {
+      title: string;
+      description: string;
+      url: string;
+      category: string;
+      tags: string[];
+      pubDate: string;
+      readingMinutes: number;
+      content: string;
+    };
+
+    const root = document.querySelector<HTMLElement>('[data-search-root]');
+    const form = root?.querySelector<HTMLFormElement>('[data-search-form]');
+    const input = root?.querySelector<HTMLInputElement>('[data-search-input]');
+    const status = root?.querySelector<HTMLElement>('[data-search-status]');
+    const results = root?.querySelector<HTMLElement>('[data-search-results]');
+    const endpoint = root?.getAttribute('data-search-endpoint');
+    let indexItems: SearchItem[] = [];
+
+    const normalize = (value: unknown) => String(value ?? '').toLocaleLowerCase('zh-CN');
+
+    const tokenize = (query: string) =>
+      normalize(query)
+        .split(/\s+/)
+        .map((token: string) => token.trim())
+        .filter(Boolean);
+
+    const formatDate = (value: string) =>
+      new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }).format(new Date(value));
+
+    const makeSnippet = (content: string, tokens: string[]) => {
+      const text = String(content ?? '');
+      const normalizedText = normalize(text);
+      const firstMatch = tokens
+        .map((token: string) => normalizedText.indexOf(token))
+        .filter((index: number) => index >= 0)
+        .sort((a: number, b: number) => a - b)[0];
+      const start = Math.max(0, (firstMatch ?? 0) - 42);
+      const snippet = text.slice(start, start + 118).trim();
+      return `${start > 0 ? '...' : ''}${snippet}${start + 118 < text.length ? '...' : ''}`;
+    };
+
+    const scoreItem = (item: SearchItem, tokens: string[]) => {
+      const title = normalize(item.title);
+      const description = normalize(item.description);
+      const category = normalize(item.category);
+      const tags = normalize((item.tags ?? []).join(' '));
+      const content = normalize(item.content);
+      const haystack = `${title} ${description} ${category} ${tags} ${content}`;
+
+      if (!tokens.every((token: string) => haystack.includes(token))) return 0;
+
+      return tokens.reduce((score: number, token: string) => {
+        if (title === token) return score + 120;
+        if (title.includes(token)) score += 60;
+        if (description.includes(token)) score += 28;
+        if (tags.includes(token)) score += 24;
+        if (category.includes(token)) score += 18;
+        if (content.includes(token)) score += 8;
+        return score;
+      }, 0);
+    };
+
+    const clearResults = () => {
+      if (results) results.textContent = '';
+    };
+
+    const renderResults = (query: string) => {
+      const tokens = tokenize(query);
+      clearResults();
+
+      if (!tokens.length) {
+        if (status) status.textContent = '输入关键词开始搜索。';
+        return;
+      }
+
+      const matches = indexItems
+        .map((item) => ({ item, score: scoreItem(item, tokens) }))
+        .filter((match) => match.score > 0)
+        .sort(
+          (a, b) =>
+            b.score - a.score || new Date(b.item.pubDate).getTime() - new Date(a.item.pubDate).getTime()
+        );
+
+      if (status) {
+        status.textContent = matches.length ? `找到 ${matches.length} 条结果。` : `没有找到与“${query}”相关的文章。`;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (const { item } of matches) {
+        const article = document.createElement('article');
+        article.className = 'search-result';
+
+        const meta = document.createElement('div');
+        meta.className = 'search-result__meta';
+
+        const category = document.createElement('span');
+        category.textContent = item.category;
+        meta.append(category);
+
+        const time = document.createElement('time');
+        time.dateTime = item.pubDate;
+        time.textContent = formatDate(item.pubDate);
+        meta.append(time);
+
+        const minutes = document.createElement('span');
+        minutes.textContent = `${item.readingMinutes} 分钟`;
+        meta.append(minutes);
+
+        const title = document.createElement('h2');
+        const link = document.createElement('a');
+        link.href = item.url;
+        link.textContent = item.title;
+        title.append(link);
+
+        const description = document.createElement('p');
+        description.textContent = item.description;
+
+        const snippet = document.createElement('p');
+        snippet.className = 'search-result__snippet';
+        snippet.textContent = makeSnippet(item.content, tokens);
+
+        article.append(meta, title, description, snippet);
+
+        if (item.tags?.length) {
+          const tags = document.createElement('div');
+          tags.className = 'search-result__tags';
+          tags.setAttribute('aria-label', '标签');
+          for (const tag of item.tags) {
+            const pill = document.createElement('span');
+            pill.textContent = tag;
+            tags.append(pill);
+          }
+          article.append(tags);
+        }
+
+        fragment.append(article);
+      }
+
+      results?.append(fragment);
+    };
+
+    const setQuery = (query: string) => {
+      if (input) input.value = query;
+      const url = new URL(window.location.href);
+      if (query) {
+        url.searchParams.set('q', query);
+      } else {
+        url.searchParams.delete('q');
+      }
+      window.history.replaceState({}, '', url);
+      renderResults(query);
+    };
+
+    const boot = async () => {
+      if (!root || !form || !input || !endpoint) return;
+
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Search index request failed.');
+        const data = await response.json();
+        indexItems = data.items ?? [];
+        const initialQuery = new URLSearchParams(window.location.search).get('q') ?? '';
+        setQuery(initialQuery);
+      } catch {
+        if (status) status.textContent = '搜索索引加载失败，请稍后再试。';
+      }
+    };
+
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      setQuery(input?.value.trim() ?? '');
+    });
+
+    input?.addEventListener('input', () => {
+      setQuery(input.value.trim());
+    });
+
+    boot();
+  </script>
+</BaseLayout>

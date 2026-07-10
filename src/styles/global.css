@@ -93,6 +93,15 @@ button {
   font: inherit;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .skip-link {
   position: fixed;
   top: 12px;
@@ -669,6 +678,108 @@ h3 {
   font-size: 0.86rem;
 }
 
+.search-shell {
+  display: grid;
+  gap: 18px;
+  width: min(100% - 32px, 860px);
+  margin: 0 auto;
+  padding: 26px 0 84px;
+}
+
+.search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-form input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--ink);
+  padding: 0 14px;
+  font: inherit;
+}
+
+.search-form input:focus {
+  border-color: var(--ink);
+  outline: 2px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  outline-offset: 2px;
+}
+
+.search-status {
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.search-results {
+  display: grid;
+  gap: 12px;
+}
+
+.search-result {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 18px;
+}
+
+.search-result:hover {
+  border-color: color-mix(in srgb, var(--ink) 32%, var(--line));
+}
+
+.search-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.search-result h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.search-result h2 a:hover {
+  color: #9d5b46;
+}
+
+:root[data-theme="dark"] .search-result h2 a:hover {
+  color: #f0c45f;
+}
+
+.search-result p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.search-result__snippet {
+  border-left: 3px solid var(--soft);
+  padding-left: 12px;
+}
+
+.search-result__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.search-result__tags span {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -783,6 +894,14 @@ h3 {
   .archive-year {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .search-form {
+    grid-template-columns: 1fr;
+  }
+
+  .search-form .button {
+    width: 100%;
   }
 
   .site-footer {
