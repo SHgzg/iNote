@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArticleCard from '../../components/ArticleCard.astro';
+import GitHubComments from '../../components/GitHubComments.astro';
 import { getCategory } from '../../data/categories';
 import { assetPath, formatDate, getPublishedPosts, readingMinutes, sitePath, slugifyTag } from '../../lib/posts';
 
@@ -41,16 +42,10 @@ const related = (await getPublishedPosts())
         )
       }
     </header>
-    {
-      post.data.heroImage && (
-        <figure class="article-hero-image">
-          <img src={assetPath(post.data.heroImage)} alt="" />
-        </figure>
-      )
-    }
     <div class="prose">
       <Content />
     </div>
+    <GitHubComments repo="SHgzg/iNote" />
   </article>
   {
     related.length > 0 && (

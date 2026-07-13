@@ -1,6 +1,6 @@
 ---
 import type { Post } from '../lib/posts';
-import { assetPath, formatDate, readingMinutes, sitePath, slugifyTag } from '../lib/posts';
+import { formatDate, readingMinutes, sitePath, slugifyTag } from '../lib/posts';
 import { getCategory } from '../data/categories';
 
 type Props = {
@@ -14,13 +14,6 @@ const minutes = readingMinutes(post.body);
 ---
 
 <article class:list={['article-card', `article-card--${mode}`]} style={`--accent:${category?.accent ?? '#777'}`}>
-  {
-    post.data.heroImage && mode !== 'compact' && (
-      <a class="article-card__image" href={sitePath(`posts/${post.slug}/`)} aria-label={post.data.title}>
-        <img src={assetPath(post.data.heroImage)} alt="" loading="lazy" />
-      </a>
-    )
-  }
   <div class="article-card__body">
     <div class="article-card__meta">
       {category && <a href={sitePath(`categories/${category.slug}/`)}>{category.name}</a>}
