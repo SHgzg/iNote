@@ -1,9 +1,7 @@
-name: Deploy Astro site to Pages
+name: Content Build
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
     paths:
       - "src/content/posts/**"
       - "src/content/config.ts"
@@ -18,26 +16,27 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - "tsconfig.json"
+      - ".github/workflows/content.yml"
       - ".github/workflows/deploy.yml"
+
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: content-build-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
 
 env:
   ASTRO_TELEMETRY_DISABLED: "1"
 
 jobs:
   build:
-    name: Validate and package Pages artifact
+    name: Validate and build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,9 +56,6 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -69,19 +65,10 @@ jobs:
       - name: Build site
         run: pnpm exec astro build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    name: Deploy
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: inote-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
