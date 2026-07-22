@@ -1,6 +1,5 @@
 ---
 import '../styles/global.css';
-import { categories } from '../data/categories';
 import { sitePath } from '../lib/posts';
 
 type Props = {
@@ -61,15 +60,6 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           <span aria-hidden="true">◐</span>
         </button>
       </nav>
-      <div class="topic-strip" aria-label="栏目快捷入口">
-        {
-          categories.slice(0, 6).map((category) => (
-            <a href={sitePath(`categories/${category.slug}/`)} style={`--accent:${category.accent}`}>
-              {category.name}
-            </a>
-          ))
-        }
-      </div>
     </header>
     <main id="content">
       <slot />
