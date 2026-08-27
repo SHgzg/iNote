@@ -1,8 +1,8 @@
 ---
 title: "数据库建模判断清单"
-description: "提炼实体、关系、属性、历史、基数与关联实体设计中的核心判断方法，形成可重复使用的建模检查清单。"
+description: "提炼实体、关系、属性、键、参照完整性、弱实体与继承建模中的核心判断方法。"
 pubDate: 2026-08-26
-updatedDate: 2026-08-26
+updatedDate: 2026-08-27
 category: "study-notes"
 tags: ["数据库建模", "ER模型", "数据模型"]
 featured: false
@@ -10,151 +10,217 @@ heroImage: "images/covers/study.svg"
 draft: false
 ---
 # 数据库建模判断清单
-
-## 核心思想
-
-### 1. 是否应该成为实体
-不要因为需求出现一个名词就建表。判断一个概念是否值得独立成为实体：
-1. 是否有独立身份，能够明确指向“这一个”？
-2. 是否有独立生命周期，能够创建、变化、结束？
-3. 是否拥有多个自身属性？
-4. 是否会被其他对象引用？
-5. 同一种关系是否可能重复发生，需要区分不同实例？
-6. 是否需要独立保存历史？
-这些是判断信号，不要求全部满足。核心是：**建模的不是名词，而是需要被系统独立管理的业务事实。**
-
-### 2. 属性属于谁：寻找决定因素
-不要问“这个字段看起来和谁有关”，而要问“什么决定这个值”。例如 `hire_date` 由员工决定，属于 `EMPLOYEE`；`project_role` 必须同时知道员工和项目才能确定，属于 `PROJECT_MEMBER`。
-
-快速技巧是“换另一端测试”：保持 A 不变，更换关系另一端 B，如果属性随之变化，它通常属于 A-B 关系。例如同一员工在不同项目中的角色不同，因此角色属于项目成员关系。
-
-### 3. 当前状态与历史事实分开
-每看到一个属性，都问它描述“现在”还是“当时”。
-- `PRODUCT.current_price`：商品当前状态。
-- `ORDER_ITEM.transaction_price`：交易发生时的历史事实。
-需要当前状态时关联当前实体读取；需要当时状态时，在历史/交易记录中保存事实或快照。商品当前价格变化不应修改历史订单成交价。
-
-### 4. 值相同不等于事实相同
-`PRODUCT.current_price = 399` 与 `ORDER_ITEM.transaction_price = 399` 数值相同，但分别表示“现在售价”和“当时成交价”。判断冗余不能看值是否一样，而要看是否表达同一个业务事实。
-
-### 5. M:N 不只是“加中间表”
-M:N 往往意味着关系本身是一种业务事实。例如 `STUDENT M:N COURSE` 中，报名时间、状态、成绩都属于“报名”，因此 `ENROLLMENT` 是关联实体，而不只是技术性的中间表。
-
-### 6. 判断关系能否重复发生
-看到 A+B 的关系，应立即问：同一个 A 和 B 之间，这件事能否再次发生？例如员工可以加入项目、退出、再加入，则 `(employee_id, project_id)` 无法标识某一次成员经历，应使用独立 `membership_id` 区分关系实例。
-
-### 7. 身份与业务唯一性是两个问题
-主键回答“这条记录是谁”，唯一约束回答“业务上什么不能重复”。例如 `project_member_id` 可以作为记录身份，而 `(employee_id, project_id)` 是否唯一取决于是否允许重复加入项目。不要把 PK 与业务 UNIQUE 混为一谈。
-
-### 8. 1:N 的外键通常放在 N 端
-例如 `DEPARTMENT 1:N EMPLOYEE`，通常由 `EMPLOYEE.department_id → DEPARTMENT.department_id`。因为每个 N 端记录只需要保存自己对应的 1 端身份。
-
-### 9. 同时判断基数与可选性
-不要只写 `USER 1:N ORDER`，还要分别问两端“最少几个、最多几个”。例如用户可以没有订单，而订单必须属于一个用户：
+## 核心判断
+### 实体
+有独立身份、独立生命周期、多个自身属性、会被其他对象引用、关系会重复发生、需要保存历史 → 考虑独立实体。不是出现名词就建表，核心是：**是否需要被系统独立管理。**
+### 属性归属
+“这个字段和谁有关？” → 不够准确。
+“什么决定这个值？” → 用决定因素判断归属。
+保持 A 不变、更换 B，属性随 B 改变 → 属性通常属于 A-B 关系。
+### 当前状态与历史事实
+`PRODUCT.current_price` → 当前状态。
+`ORDER_ITEM.transaction_price` → 当时事实。
+需要“现在” → 读取当前实体；需要“当时” → 保存历史事实/快照。
+值相同 ≠ 业务事实相同。
+### M:N 与关联实体
+M:N 关系具有自己的属性、生命周期或历史 → 关系本身应建模为关联实体。
+同一 A+B 能重复发生 → `(a_id,b_id)` 通常不足以标识一次关系实例。
+### 身份与业务唯一性
+Primary Key → 主要身份。
+UNIQUE → 业务上什么不能重复。
+两者不是同一个问题。
+### 基数与可选性
+完整基数统一写 `min..max`：
 ```text
-USER → ORDER = 0..N
-ORDER → USER = 1
+0..1 → 零个或一个
+1..1 → 恰好一个
+0..* → 零个或多个
+1..* → 一个或多个
 ```
-常见范围是 `0..1`、`1`、`0..N`、`1..N`。
-
-### 10. 同一实体可以用不同角色参与关系
-实体类型相同不代表业务角色相同。例如：
+关系类型由 Maximum Cardinality 判断：
 ```text
-FOLLOW.follower_id → USER.id
-FOLLOW.followee_id → USER.id
+1:1 → 两端最大值都是 1
+1:N → 一端最大值 1，另一端 *
+M:N → 两端最大值都是 *
 ```
-两个外键都指向 USER，但分别表示关注者和被关注者。转账中的付款账户/收款账户、合同中的买方/卖方同理。
-
-### 11. “属性”内部有结构时重新判断是否为实体
-需求把某个概念描述成字段，不代表它一定应该是字段。如果一个属性内部又有身份、多个属性、关系或生命周期，应考虑拆成实体。例如真实处方可能继续拆成 `PRESCRIPTION` 与 `PRESCRIPTION_ITEM`。反过来，出现名词也不意味着必须建实体。
-
-### 12. 区分类型与具体实例
-业务操作针对的可能不是抽象类型，而是具体实例。例如“书目”与图书馆中的“某一本实体藏书”不同：
+Minimum Cardinality 判断参与约束：
 ```text
-BOOK 1:N BOOK_COPY
+0 → Optional Participation
+1 → Mandatory Participation
 ```
-真正被借阅的是 `BOOK_COPY`。类似问题还有车型/具体车辆、房型/具体房间、设备型号/具体设备、课程/某学期具体开课。
-
-### 13. 业务规则决定模型
-数据库理论不能替业务决定基数和约束。一个商品只能成交一次还是允许多次交易、学生能否重复报名、员工能否重新加入项目，都必须从业务规则确定。**ER 模型本质上是在编码业务规则。**
-
-### 14. 不要过早进入物理实现
-建模顺序应保持：
+任何关系都双向问：一个 A 最少/最多几个 B？一个 B 最少/最多几个 A？
+### Crow's Foot
 ```text
-业务事实 → 概念模型 → 实体与关系 → 基数/可选性 → 逻辑模型 → 键与约束 → Access Pattern → 物理模型 → 字段类型/索引/分区
+○| → 0..1
+|| → 1..1
+○< → 0..*
+|< → 1..*
 ```
-不要在业务模型尚未明确时过早讨论 BIGINT、UUID、索引或具体数据库。
-
-## 基数与可选性
-
-### 规范术语
-**Cardinality（基数）**描述实体实例在特定关系中允许关联的数量；基数属于关系约束，而不是实体自身属性。同一实体在不同关系中的基数可以完全不同。
-
-**Minimum Cardinality（最小基数）**表示至少必须关联多少个实例；**Maximum Cardinality（最大基数）**表示最多允许关联多少个实例。最小基数同时体现参与约束：`0` 表示 **Optional Participation（可选参与）**，`1` 表示 **Mandatory Participation（强制参与）**。
-
-完整基数统一采用 `min..max`：
+从 A 出发问“一个 A 有多少 B” → 读取 B 端符号。
+## Keys
+### Super Key / Candidate Key / Primary Key
 ```text
-0..1   零个或一个
-1..1   恰好一个
-0..*   零个或多个
-1..*   一个或多个
+能唯一标识记录 → Super Key
+唯一 + 删除任一属性后都不再唯一 → Candidate Key
+从 Candidate Keys 中选一个主要标识 → Primary Key
+未被选为 Primary Key 的 Candidate Key → Alternate Key
 ```
-关系类型仍使用 `1:1`、`1:N`、`M:N`，它主要由两端的最大基数决定；完整基数则同时保留最小基数和最大基数信息。
-
-### 双向判断关系
-任何二元关系都必须从两端分别判断。固定问四个问题：
-1. 一个 A 最少关联几个 B？
-2. 一个 A 最多关联几个 B？
-3. 一个 B 最少关联几个 A？
-4. 一个 B 最多关联几个 A？
-
-例如：客户可以从未下单，也可以下多个订单；每个订单必须且只能属于一个客户。
+Candidate Key 的“最小”指 Minimality，不是字段数量必须为 1。
 ```text
-关系类型：CUSTOMER 1:N ORDER
-CUSTOMER → ORDER : 0..*
-ORDER → CUSTOMER : 1..1
+(order_id,line_no)
 ```
-`CUSTOMER` 对订单为可选参与，`ORDER` 对客户为强制参与。
-
-### 关系类型与完整基数不要混淆
-`A 1:N B` 只说明最大基数：一个 A 最多关联多个 B，一个 B 最多关联一个 A；它不能说明是否允许零个实例。完整约束必须进一步写出最小基数。
-
-例如员工与公司配车：员工可以没有配车且最多一辆；车辆可以闲置且最多分配给一名员工。
+若两列缺一都不能唯一 → Composite Candidate Key。
+### Natural Key / Surrogate Key
 ```text
-关系类型：EMPLOYEE 1:1 VEHICLE
-EMPLOYEE → VEHICLE : 0..1
-VEHICLE → EMPLOYEE : 0..1
+来自业务世界、有业务语义 → Natural Key
+系统人为生成、无业务语义 → Surrogate Key
 ```
-虽然关系类型是 `1:1`，双方都是可选参与，因此 `1:1` 不意味着双方必须存在。
-
-论文与作者：论文必须至少有一名作者且允许多名作者；作者可以没有论文，也可以发表多篇。
+Natural/Surrogate 描述键的来源；Primary/Candidate/Alternate 描述键的角色，两组概念不是同一维度。
+典型设计：
 ```text
-关系类型：AUTHOR M:N PAPER
-AUTHOR → PAPER : 0..*
-PAPER → AUTHOR : 1..*
+product_id → Surrogate Primary Key
+sku_code   → Natural Alternate Key + UNIQUE
 ```
-`M:N` 同样无法表达两端是否为可选参与或强制参与。
-
-### 判断顺序
-分析关系时可分两轮：
+为什么已有 `sku_code` 仍使用 `product_id`？
 ```text
-第一轮：Maximum Cardinality
-→ 判断关系类型 1:1 / 1:N / M:N
-
-第二轮：Minimum Cardinality
-→ 判断每一端 Optional / Mandatory Participation
+业务标识可能变化
+→ 不应让变化传播到所有引用关系
+→ 用稳定代理键隔离实体身份与业务标识
 ```
-不要根据 ER 图中的 `1:N` 位置机械反推。应直接读取业务语义：“一个 A 能关联几个 B？”、“一个 B 能关联几个 A？”。
-
-## 建模十问
-拿到业务需求后依次检查：
-1. 这里真正存在什么业务事实？
-2. 哪些概念需要独立身份？
-3. 每个属性究竟由什么决定？
-4. 它是实体属性还是关系属性？
-5. 关系两端的最小/最大基数分别是多少？
-6. 同一关系能否重复发生？
-7. 需要保存当前状态还是历史事实？
-8. 这个概念需要独立生命周期和历史吗？
-9. 它是类型还是具体实例？
-10. 业务规则变化时，这个模型能否继续正确表达？
+代理主键 ≠ 放弃业务唯一性。稳定代理键与业务 UNIQUE 通常同时存在。
+## Foreign Key 与参照完整性
+```text
+FOREIGN KEY → 引用目标必须存在
+NOT NULL    → 必须参与关系
+UNIQUE      → 限制同一目标被重复引用
+```
+1:N → FK 通常放 N 端。
+```text
+EMPLOYEE.department_id → DEPARTMENT.department_id
+```
+`EMPLOYEE → DEPARTMENT : 1..1` → FK 通常 `NOT NULL`。
+`EMPLOYEE → DEPARTMENT : 0..1` → FK 可以为 `NULL`。
+只定义 FK 不会自动实现 1:1：
+```text
+FK     → 目标存在
+UNIQUE → 最多引用一次
+NOT NULL → 必须引用
+```
+Foreign Key 不要求定义上只能引用 Primary Key；它可以引用满足相应唯一性要求的候选键，工程上通常优先引用稳定的主键。FK 也可以是 Composite Foreign Key。
+### 1:1 的 FK 放哪边
+一边 Optional、一边 Mandatory → 优先把 FK 放强依赖侧。
+```text
+USER → PROFILE : 0..1
+PROFILE → USER : 1..1
+```
+通常：
+```text
+PROFILE.user_id → USER.user_id
+```
+从属实体没有独立身份 → 可考虑 Shared Primary Key：
+```text
+PROFILE.user_id → PK + FK
+```
+### Referential Actions
+```text
+子记录不能脱离父记录存在 → CASCADE
+子记录能存在但不能失去父关系 → RESTRICT / NO ACTION
+子记录能存在且父关系可选 → SET NULL
+明确存在合法默认关联 → SET DEFAULT
+```
+删除策略不能仅由 1:N/1:1 推出，必须先判断生命周期和历史保留规则。
+历史业务事实通常不能因主体注销而自动删除；账户/商品等主体常需要考虑软删除。
+## Weak Entity 与 Identifying Relationship
+### Weak Entity
+自身属性不足以完整标识，必须结合 Owner Entity 的键 → Weak Entity。
+```text
+EMPLOYEE(employee_id)
+DEPENDENT(dependent_name)
+```
+若家属名只在员工内部唯一：
+```text
+Owner Entity → EMPLOYEE
+Partial Key / Discriminator → dependent_name
+完整标识 → (employee_id,dependent_name)
+```
+### Identifying vs Non-identifying
+```text
+父键作为 FK，并参与子实体身份 → Identifying Relationship
+父键只是 FK，不参与子实体身份 → Non-identifying Relationship
+```
+不要把三个维度混为一谈：
+```text
+Cardinality → 能关联多少？
+Lifecycle Dependency → 父不存在，子还能存在吗？
+Identity Dependency → 不使用父 Key，子还能唯一标识吗？
+```
+生命周期依赖 ≠ 身份依赖。
+例如：
+```text
+TASK(task_id PK, project_id FK)
+```
+TASK 可随 PROJECT 删除 → Lifecycle Dependency ✓；`task_id` 已全局唯一 → Identity Dependency ✗ → Non-identifying。
+```text
+ROOM(building_id PK/FK, room_number PK)
+```
+`room_number` 只在 BUILDING 内唯一 → Lifecycle Dependency ✓；Identity Dependency ✓ → Identifying。
+增加全局 `room_id` 后，物理键结构可以变成 Non-identifying，但领域上的生命周期依赖仍可能存在。
+## Supertype / Subtype
+### IS-A
+```text
+CARD_PAYMENT IS-A PAYMENT
+BANK_TRANSFER IS-A PAYMENT
+```
+共同身份、属性、关系放 Supertype；类型特有属性放 Subtype。Subtype 继承 Supertype 的 Identity、Attributes、Relationships。
+Subtype 与普通 1:1 不同：子类型实例和超类型实例是同一个业务对象，不是两个对象之间的关联。
+### Generalization / Specialization
+```text
+多个具体类型 → 提取共同 Supertype → Generalization
+一个通用类型 → 按业务规则拆成 Subtype → Specialization
+```
+角色通常不是 Subtype：同一 USER 在不同交易中可以分别作为 BUYER、SELLER → 更适合关系角色。
+状态通常不是 Subtype：ORDER 从 pending → paid → shipped → 更适合状态属性/状态机。
+### Disjoint / Overlapping
+问：**能不能同时属于多个 Subtype？**
+```text
+只能是其中一种 → Disjoint
+可以同时是多种 → Overlapping
+```
+### Total / Partial
+问：**能不能一个 Subtype 都不属于？**
+```text
+必须至少是其中一种 → Total
+可以一种都不是 → Partial
+```
+四种组合：
+```text
+Disjoint + Total
+Disjoint + Partial
+Overlapping + Total
+Overlapping + Partial
+```
+例：PERSON 可以同时是 STUDENT 和 EMPLOYEE，也可以两者都不是：
+```text
+允许同时是多种 → Overlapping
+允许一种都不是 → Partial
+最少 0 个 Subtype
+最多 2 个 Subtype（当前只有两个）
+```
+## 建模快速检查
+```text
+需要独立管理吗？ → 判断实体
+什么决定这个值？ → 判断属性归属
+描述现在还是当时？ → 当前状态 / 历史事实
+同一关系能重复吗？ → 判断关系身份
+一个 A 最少/最多几个 B？ → Cardinality
+能唯一标识吗？ → Super Key
+删除任一键属性还能唯一吗？ → Candidate Key Minimality
+业务标识会变化吗？ → 考虑 Surrogate Key
+引用目标必须存在吗？ → Foreign Key
+关系必须存在吗？ → NOT NULL
+同一目标能重复引用吗？ → UNIQUE
+父不存在，子还能存在吗？ → Lifecycle Dependency
+不用父 Key，子还能唯一吗？ → Identity Dependency
+能同时属于多个 Subtype 吗？ → Disjoint / Overlapping
+能一个 Subtype 都不属于吗？ → Total / Partial
+```
