@@ -1,413 +1,858 @@
 ---
-title: "初识 Harness"
-description: "从结构、流程、控制权、状态、安全与评测等维度认识 Harness，理解它如何把模型能力转化为可持续执行的 Agent 系统。"
+title: "初识 Harness：从一次推理到可持续 Agent 系统"
+description: "从真实需求出发，系统理解 LLM、Loop、Tools、Context、Filesystem、Memory、Verification、Recovery 与治理机制如何共同组成 Agent Harness。"
 pubDate: 2026-07-22
-updatedDate: 2026-07-22
+updatedDate: 2026-09-01
 category: "study-notes"
-tags: ["Harness", "AI Agent", "Agent 架构"]
+tags: ["Harness", "AI Agent", "Context Engineering", "Agent 架构"]
 featured: false
 heroImage: "images/covers/study.svg"
 draft: false
 ---
 
-# 初识 Harness
+# 初识 Harness：从一次推理到可持续 Agent 系统
 
-## 核心判断
+## 从真实需求开始：我们到底希望 AI 做什么
 
-在 AI 领域，**Harness 通常指围绕模型搭建的一套控制、执行与约束系统**。它负责组织模型如何获得信息、调用工具、维持状态、处理失败、接受约束，并最终完成任务。
+如果目标只是回答一个问题，LLM 已经足够强。但真实的 Agent 需求通常不是“一次回答”，而是：
 
-这个词原本有马具、安全带或线束的含义：Harness 本身不提供动力，却能连接、引导和约束力量。放到 AI 系统中，可以用一句话概括：
+- 围绕一个长期目标持续推进；
+- 自己拆解任务并维护进度；
+- 查找资料、读取文件、调用系统；
+- 根据环境反馈修正下一步；
+- 保存跨轮次、跨会话的状态；
+- 在失败后恢复，而不是简单停掉；
+- 判断结果是否真的达到要求；
+- 在权限、安全、成本和时间边界内行动。
 
-> 模型主要负责理解和判断下一步做什么，Harness 负责让这一步真正发生，并使整个过程可持续、可控制、可观察。
+因此，Agent 的目标不是让 LLM 多回答几次，而是把 LLM 的理解、推理、生成和决策能力，扩展成一个能够围绕目标持续、可靠、受控地完成任务的系统。
 
-Harness 并没有唯一而严格的行业定义。不同产品可能把 Runtime、编排器、安全层或部分环境能力也算入 Harness。因此，理解它时不应只背组件列表，而要先确认讨论中的系统边界。
-
-可以先用一个近似公式定位它：
-
-```text
-Agent System = Model + Harness + Runtime + Environment
-```
-
-- **Model**：理解、推理、生成和局部决策。
-- **Harness**：组织模型如何观察、行动、纠错和结束任务。
-- **Runtime**：让任务能够运行、暂停、恢复和持久化。
-- **Environment**：Agent 能观察和改变的外部世界。
-
-“Agent”有时指整个系统，有时只指模型加执行循环。讨论具体架构时，需要先说明这个词的边界。
-
-## 为什么模型需要 Harness
-
-LLM 本身通常能够接收上下文、生成文本，也可以生成结构化的工具调用请求。但“提出调用工具”并不等于“执行工具”。
-
-例如，模型可能输出：
-
-```json
-{
-  "tool": "read_file",
-  "arguments": {
-    "path": "package.json"
-  }
-}
-```
-
-这只表达了一个动作意图。要真正读取文件，外部系统还要完成：
-
-1. 解析模型输出；
-2. 校验参数；
-3. 检查权限；
-4. 调用文件系统；
-5. 获取并规范化结果；
-6. 把结果重新放入上下文；
-7. 再次调用模型；
-8. 重复执行，直到任务完成。
-
-模型也不能天然地管理长期任务状态、控制权限与风险、在上下文溢出后恢复、从失败中重试、保存执行轨迹，或证明目标已经真正完成。这些正是 Harness 要补上的部分。
-
-## 最小运行闭环
-
-Harness 最基本的骨架是 Agent Loop：
+可以先把最核心的差距写成：
 
 ```text
-接收任务
-→ 构造当前上下文
-→ 调用模型
-→ 获得工具调用或最终回答
-→ 校验并执行工具
-→ 更新状态并把结果放回上下文
-→ 再次调用模型
-→ 验证目标并结束
+我们想要：
+长期目标 → 计划 → 行动 → 观察 → 验证 → 修正 → 持续推进
+
+裸 LLM：
+输入 Context → 一次 inference → 输出 token
 ```
 
-最小代码看起来并不复杂：
+两者之间缺失的系统能力，就是 Harness 为什么存在。
 
-```ts
-while (!finished) {
-  const context = buildContext(state);
-  const response = await model.generate(context);
+## LLM 本质上是什么
 
-  if (response.type === "tool_call") {
-    const result = await executeTool(response.toolCall);
-    state.messages.push(response, result);
-  } else {
-    finished = await verify(response, state);
-  }
-}
-```
-
-真正困难的不是写出这个 `while`，而是回答下面的问题：
-
-- 每一轮应该给模型哪些信息？
-- 当前状态下应该暴露哪些工具？
-- 哪些操作必须审批？
-- 工具失败后应该重试还是重新规划？
-- 如何发现重复循环？
-- 如何判断模型是否过早宣称完成？
-- 上下文满了以后保留什么？
-- 怎样限制时间、成本和调用次数？
-
-所以，Agent Loop 只是 Harness 的骨架，策略和边界才决定它的实际表现。
-
-## Harness 的静态结构
-
-从“由什么组成”的角度，可以把 Harness 拆成以下部分：
-
-| 组成部分 | 主要职责 |
-| --- | --- |
-| 模型接口 | 统一模型调用、消息和结构化输出 |
-| Context | 选择、组织、压缩并注入当前所需信息 |
-| Tool System | 注册工具、校验参数、执行调用并处理错误 |
-| State | 保存任务进度、计划和环境变化 |
-| Memory | 在当前任务或跨任务范围内保存可复用信息 |
-| Skill | 封装某一类任务的触发条件、知识与操作流程 |
-| Planning | 分解任务、维护阶段和完成条件 |
-| Guardrail | 权限、审批、预算、沙箱和危险操作限制 |
-| Trace | 记录模型调用、工具执行、耗时和错误 |
-| Eval | 判断动作、过程和最终结果是否合格 |
-
-组件名称并不决定系统质量。即使两个 Harness 都有 Tool、Memory 和 Planning，它们也可能因为上下文选择、控制权分配、终止条件和错误恢复策略不同而表现完全不同。
-
-## 认识 Harness 的九个维度
-
-分析一个具体 Harness 时，可以依次问九个问题。
-
-### 1. 目标：它要完成什么任务
-
-首先确认 Harness 服务的任务类型，例如编程、资料研究、客服、数据分析或业务流程执行。目标决定它需要哪些信息、工具、权限和验证机制。
-
-同一套通用循环很难直接适配所有任务。编程 Agent 要关心文件变化和测试结果，研究 Agent 要关心检索覆盖、证据与引用，业务 Agent 则可能更重视身份、审批和幂等性。
-
-### 2. 边界：各部分分别负责什么
-
-需要明确 Model、Harness、Runtime 和 Environment 的分工。
-
-一个实用判断是：
-
-> 如果某个功能主要决定模型在任务中如何观察、判断、行动和纠错，它通常更接近 Harness；如果它主要保证进程如何持久运行、调度、恢复和扩缩容，它更接近 Runtime。
-
-实际系统中二者会交叉，但先做这种区分有助于定位问题。
-
-### 3. 信息：每一步模型知道什么
-
-Harness 本质上也是信息管理系统。模型每一轮可能看到：
-
-- 用户目标与输出要求；
-- System Prompt、项目规范与安全策略；
-- 对话历史和近期工具结果；
-- 文件、数据库或页面的当前状态；
-- 计划、待办与完成进度；
-- RAG 或搜索获得的知识；
-- 工具定义与可加载的 Skill；
-- 用户偏好与长期项目背景。
-
-这里的关键动作是：
+从 Agent Engineering 的角度，可以先把 LLM 看成一次 inference：
 
 ```text
-获取 → 选择 → 组织 → 注入
+输入 token
+   ↓
+理解 / 推理 / 决策
+   ↓
+输出 token
 ```
 
-Context Engineering 不只是控制 Token 数量，而是在管理模型每一步的认知边界。
+它可以非常聪明，但它本身不是一个长期运行系统。它天然不等于：
 
-### 4. 决策：控制权掌握在谁手中
+- 长期任务生命周期；
+- 外部状态存储；
+- 文件系统；
+- 网络访问；
+- 权限控制；
+- 环境隔离；
+- 可靠验证；
+- 错误恢复；
+- 长期记忆；
+- 任务调度。
 
-Agent 系统通常有三类决策者：
+因此，Agent 的基本问题不是“怎样让模型更聪明”，而是：
 
-| 决策者 | 更适合负责 |
-| --- | --- |
-| 程序代码 | 固定规则、权限、参数校验、流程边界 |
-| 模型 | 语义理解、动态规划、工具选择、异常分析 |
-| 人类 | 高风险审批、模糊目标确认、价值判断 |
+> 怎样把一次性的智能调用组织成一个能够长期观察、行动、验证和恢复的系统？
 
-研究 Harness 时，不能只问“是否支持规划”，而应进一步问：
+## Agent 与 Harness 的关系
 
-> 规划权、执行权、验证权和终止权，分别由模型、程序还是人类掌握？
-
-完全固定的 Workflow 由程序预先确定路径；高度自主的 Agent 让模型动态选择行动。生产系统常见的形态是外层确定性流程加内层自主 Agent：程序规定阶段与边界，模型决定阶段内的行动，程序再验证阶段结果。
-
-### 5. 行动：模型意图如何影响现实
-
-完整工具链不只是一个函数列表，而是一条执行管道：
+可以先用一个近似模型理解：
 
 ```text
-能力发现
-→ 工具选择
-→ 参数生成
-→ Schema 校验
-→ 权限判断
-→ 实际执行
-→ 结果规范化
-→ 错误恢复
-→ 状态更新
+Agent System
+= Model + Harness + Runtime + Environment
 ```
 
-需要关注工具是静态注册还是动态加载、是否区分读写操作、是否支持审批和并行、是否具备幂等性，以及工具结果怎样压缩后重新进入上下文。
+- **Model**：负责理解、推理、生成和局部决策。
+- **Harness**：组织模型如何获得信息、采取行动、维护状态、接受约束、验证结果和处理失败。
+- **Runtime**：让任务能够真正运行、暂停、恢复、持久化和管理生命周期。
+- **Environment**：Agent 可以观察和改变的外部世界。
 
-工具能力越强，系统越不能只依赖 Prompt 中的软约束。
+“Harness”没有唯一严格的行业边界，但一个稳定的判断是：如果某个机制主要决定模型在任务中如何观察、行动、纠错和受到约束，它通常属于 Harness 的讨论范围。
 
-### 6. 状态：任务如何跨越时间持续
+## 第一步：Loop，把一次 inference 变成持续行为
 
-可以把状态分为四个时间尺度：
-
-| 状态类型 | 示例 |
-| --- | --- |
-| 短期状态 | 当前消息、最近工具结果、临时变量 |
-| 任务状态 | 已完成步骤、待办项、文件修改和测试结果 |
-| 持久化状态 | Checkpoint、工作目录、执行轨迹、待审批动作 |
-| 长期记忆 | 用户偏好、项目约定、历史决策和可复用经验 |
-
-Memory 只是状态问题的一部分。更完整的问题是：
-
-> Harness 如何在上下文窗口、模型调用、进程和任务之间维持连续性？
-
-长任务通常还需要历史压缩、工具结果截断、重要事实提取、状态持久化和按需重新加载。
-
-### 7. 约束：能力边界在哪里
-
-安全机制可以分为四层：
-
-| 层次 | 示例 |
-| --- | --- |
-| 认知约束 | Prompt 中说明禁止事项 |
-| 能力约束 | 不向模型暴露危险工具 |
-| 执行约束 | 参数校验、沙箱、文件权限和网络白名单 |
-| 人类约束 | 删除、付款、发送消息前要求审批 |
-
-提示词中的“不要删除文件”只是软约束。更可靠的 Harness 会在执行层禁止未授权操作。
-
-除了权限，还要考虑 Token 和成本上限、最大循环次数、超时、数据隔离、敏感信息过滤、审计、撤销与补偿机制。成熟系统不仅要说明“能做什么”，还要明确“在什么条件下绝对不能做什么”。
-
-### 8. 反馈：失败后怎样恢复
-
-Agent 的失败不只包括程序异常，还可能是选错工具、参数语义错误、工具执行成功但目标没有实现、陷入循环、上下文遗漏信息或过早宣称完成。
-
-需要区分四类恢复方式：
-
-- **Retry**：同一个动作再做一次，适合临时网络错误。
-- **Replan**：承认原策略有问题，重新决定行动路径。
-- **Rollback**：撤销已经造成的环境变化。
-- **Resume**：从可靠检查点继续执行。
-
-成熟 Harness 需要判断何时采用哪一种，而不是对所有失败机械重试。
-
-### 9. 评测：怎样证明任务真的完成
-
-评测不能只看最终回答是否“像是正确的”，至少要覆盖四层：
-
-| 评测层级 | 评测对象 |
-| --- | --- |
-| 模型级 | 理解、推理和生成能力 |
-| 动作级 | 工具选择与参数是否正确 |
-| 过程级 | 路径是否合理，是否存在无效循环 |
-| 结果级 | 外部环境是否达到目标状态 |
-
-例如修复代码 Bug，最终标准应是文件正确修改、测试通过、没有明显回归、未修改无关文件，并且高风险动作经过了必要审批，而不是模型只回复“已修复”。
-
-## 相近概念的边界
-
-| 概念 | 主要解决的问题 | 与 Harness 的关系 |
-| --- | --- | --- |
-| Agent Framework | 怎样用通用抽象构建 Agent | 提供积木；Harness 更像带有策略和默认行为的组装方案 |
-| Runtime | 任务怎样持久、调度、暂停和恢复 | 与 Harness 经常重叠，但更偏稳定运行 |
-| Orchestrator | 模型、工具、步骤或多个 Agent 怎样协调 | 通常是 Harness 的一部分或实现手段 |
-| Scaffold | 模型外围的 Prompt、循环、重试和验证脚手架 | 在论文和评测语境中常与 Harness 近似 |
-| Skill | 某类任务应怎样完成 | Harness 可按需加载的程序性经验 |
-| Tool | 实际执行一个动作 | Harness 负责选择、校验、调用和管理工具 |
-| MCP | 外部工具和资源怎样统一接入 | 可以作为 Harness 的能力接入层 |
-| RAG | 怎样检索并注入相关知识 | 通常是 Harness 的一种上下文获取能力 |
-| Workflow | 怎样按预定路径执行步骤 | 可作为外层确定性流程，与内层 Agent Harness 组合 |
-
-可以用三句话记住 Skill、Tool 与 Harness：
+裸模型只能完成一次输入到输出。真实任务却经常需要：
 
 ```text
-Harness：决定 Agent 如何持续工作
-Skill：说明某一类任务具体怎样完成
-Tool：提供可以真正执行的动作
+思考
+↓
+行动
+↓
+看到新结果
+↓
+重新思考
+↓
+再次行动
 ```
 
-## Agent Harness 与 Evaluation Harness
-
-“Harness”还有另一个常见含义：**Evaluation Harness，评测执行系统**。二者不能混为一谈。
-
-| 类型 | 作用 |
-| --- | --- |
-| Agent Harness | 让模型使用信息和工具完成真实任务 |
-| Evaluation Harness | 批量运行测试、记录轨迹、评分并聚合结果 |
-
-Evaluation Harness 通常包含测试集、测试环境、多次 Trial、结果记录、确定性断言、模型评分或人工评分，以及成功率、成本、延迟等统计。
-
-二者的关系是：Evaluation Harness 可以批量运行 Agent Harness，并检查它工作得怎么样。
-
-## Harness Engineering
-
-Harness Engineering 可以理解为：
-
-> 设计模型外围的软件、环境、反馈与约束机制，使模型能够稳定地产生有价值的实际结果。
-
-它比 Prompt Engineering 的范围更大：
+因此最基础的扩展是 Loop：
 
 ```text
-Prompt Engineering
-→ Context Engineering
-→ Harness Engineering
-→ Agent System Engineering
+Model
+  ↓ Action
+Environment
+  ↓ Observation
+Model
 ```
 
-- Prompt Engineering 关注一次调用中怎样表达任务。
-- Context Engineering 关注每一轮应该给模型什么信息。
-- Harness Engineering 关注模型怎样持续使用工具完成任务。
-- Agent System Engineering 关注整个生产系统怎样安全、可靠和可扩展地运行。
+Loop 解决的原始需求不是“多轮聊天”，而是：
 
-Harness Engineering 的优化对象包括 Prompt、工具描述、工具返回格式、上下文选择、规划策略、终止条件、错误恢复、权限模型、Skills、子 Agent 和验证反馈。
+> 行动会改变环境，新的环境状态必须重新影响下一轮决策。
 
-它的演化通常来自失败闭环：
+所以 Agent 更接近一个 closed-loop control system，而不是单纯的聊天机器人。
+
+今天常见的实现可能是 `while loop`、ReAct loop 或框架内部调度。未来更强的模型可能原生吸收部分循环能力，但“任务需要根据环境反馈持续调整”这个需求不会消失。
+
+## 第二步：Tools，让模型能够感知和改变外部环境
+
+LLM 输出的是 token。它可以说“应该读取文件”，但这句话本身不会真正打开文件。
+
+Tools 的原始需求是建立：
 
 ```text
-发现失败
-→ 分析 Trace
-→ 判断问题来自模型、上下文、工具还是策略
-→ 修改 Harness
-→ 加入验证机制
-→ 更新评测集
-→ 重新运行
+Model ↔ Environment
 ```
 
-核心目标不是不断堆叠功能，而是把模型偶然表现出的正确行为，逐步固化为系统能够稳定产生的行为。
+这个接口。
 
-## 一个编程 Agent 的例子
+Tools 大体有两个方向。
 
-假设任务是“为项目增加登录功能，并确保测试通过”。
+### Perception：观察世界
 
-**模型主要负责：**
+例如：
 
-- 理解需求；
-- 判断要读取哪些文件；
-- 分析架构；
-- 规划修改；
-- 生成代码；
-- 根据测试结果调整方案。
+- 读取文件；
+- 搜索网页；
+- 查询数据库；
+- 运行测试；
+- 查看日志；
+- 检查 Git diff。
 
-**Harness 主要负责：**
+### Action：改变世界
 
-- 把仓库规则放入上下文；
-- 提供文件、搜索和 Shell 工具；
-- 执行模型提出的工具调用；
-- 限制可访问目录；
-- 保存和跟踪文件变化；
-- 处理过长的测试日志；
-- 在上下文不足时压缩历史；
-- 拦截未经授权的危险命令；
-- 记录执行轨迹；
-- 验证是否真的运行了测试。
+例如：
 
-**Runtime 主要负责：**
+- 写文件；
+- 调用 API；
+- 修改代码；
+- 操作业务系统；
+- 提交变更。
 
-- 创建并维持运行环境；
-- 保持工作目录；
-- 运行测试进程；
-- 保存 Checkpoint；
-- 处理超时、暂停和恢复；
-- 管理任务生命周期。
+因此，Tools 的本质不只是“让模型做事”，而是提供感知与行动接口。
 
-这个例子说明：真正的 Agent 能力并不完全等于模型能力。同一个模型搭配不同 Harness，在长期任务、工具使用、可靠性和安全性上可能表现出明显差异。
+未来模型可能原生拥有更强的 computer use、shell 或 browser 能力，今天具体的 tool-calling interface 可能变化，但“模型必须与外部环境交互”这个需求不会消失。
 
-## 建议的学习顺序
+## 为什么 Loop + Tools 仍然不够
 
-可以沿着以下顺序逐步掌握 Harness：
+有了循环和工具，Agent 已经可以持续行动，但马上会出现更难的问题：
 
-1. 最小 Agent Loop；
-2. Context 构造；
-3. Tool 定义与执行；
-4. State 与 Memory；
-5. Planning 与终止条件；
-6. 权限与安全；
-7. 错误恢复；
-8. Trace 与 Eval；
-9. Runtime 与生产部署。
+- 什么时候应该退出？
+- 什么样的结果算完成？
+- 如何证明模型没有过早宣称完成？
+- 工具失败后应该重试、重规划还是回滚？
+- 上下文越来越长怎么办？
+- 哪些历史信息应该继续保留？
+- 哪些工具当前允许调用？
+- 哪些操作必须人工审批？
+- 一个任务运行几个小时后，状态保存在哪里？
+- 多个任务如何避免上下文互相污染？
 
-学习时不应停留在“是否拥有某个组件”，而要持续追问：信息怎样流动、控制权如何分配、动作如何落地、失败如何恢复、结果如何验证。
+因此：
+
+```text
+Loop + Tools
+= 能持续行动
+
+生产级 Agent Harness
+= 能持续、正确、可恢复、受约束地完成任务
+```
+
+真正困难的 Harness Engineering 从这里开始。
+
+## Harness 机制来自四类根本需求
+
+Harness 不能只理解为“补模型能力”。它至少来自四类问题。
+
+### 1. Capability：模型当前做不到什么
+
+例如：
+
+- 长任务容易偏离；
+- 不能稳定维护长期状态；
+- 不会可靠自测；
+- 当前 Context 有限；
+- 无法直接访问外部环境。
+
+对应机制包括：
+
+- Planning；
+- Memory；
+- Context Management；
+- Tools；
+- Verification。
+
+这类 scaffolding 最有可能随着模型能力提升而减少。
+
+### 2. Reliability：系统失败以后怎么办
+
+现实系统会遇到：
+
+- API 503；
+- network timeout；
+- tool crash；
+- 输出格式错误；
+- 状态中断。
+
+对应机制包括：
+
+- Retry；
+- Recovery；
+- Checkpoint；
+- Rollback；
+- Fallback。
+
+这类机制解决的是可靠性，不只是模型智力问题。
+
+### 3. Governance：系统允许模型做什么
+
+即使模型判断完全正确，也不代表它自动拥有无限权限。
+
+例如：
+
+- 不能随便删除文件；
+- 不能访问未授权数据库；
+- 不能泄露敏感信息；
+- 高金额操作必须人工审批；
+- 高风险操作必须被审计。
+
+对应机制包括：
+
+- Permissions；
+- Sandbox；
+- Authentication；
+- Human Approval；
+- Privacy Policy；
+- Audit。
+
+这类机制不会因为模型变聪明而消失。模型能力越强，某些控制反而越重要。
+
+### 4. Economics：任务能花多少资源
+
+Agent 不能无限消耗：
+
+- token；
+- 时间；
+- API 成本；
+- 算力；
+- 并发；
+- 工具调用次数。
+
+因此还需要：
+
+- Budget；
+- Rate Limit；
+- Timeout；
+- Cache；
+- Resource Limit。
+
+## Context：系统此刻决定让模型看到什么
+
+Context Window 不是整个知识库，而是模型这一次 inference 真正能够直接处理的 working set。
+
+里面可能包含：
+
+- system prompt；
+- 用户当前目标；
+- 对话历史；
+- 检索到的文档；
+- 工具输出；
+- Memory；
+- Plan；
+- 文件片段。
+
+因此：
+
+```text
+Context Window ≠ 系统知道的一切
+Context Window = 模型此刻真正看到的工作集
+```
+
+Context Engineering 的问题也不只是“装不下”。即使 context window 足够大，把所有信息塞进去仍然可能让模型表现下降，因为会发生注意力稀释、旧状态干扰、多个方案混淆和指令冲突。
+
+可以用一句话概括：
+
+> Context 不是系统知道的一切，而是系统此刻决定让模型看到的一切。
+
+## Context Window、Filesystem、Memory 与 Retrieval 的区别
+
+这是容易混淆、但必须明确的四个概念。
+
+### Context Window：当前工作桌
+
+Context Window 是当前 inference 中真正参与模型计算的信息。
+
+类比：
+
+```text
+Context Window = 办公桌
+```
+
+桌上的内容必须是当前决策真正需要的 working set。
+
+### Filesystem：持久状态
+
+Filesystem 首先是 context 外部的 durable external state。
+
+例如：
+
+```text
+articles/
+notes/
+progress.md
+logs/
+```
+
+Filesystem 的核心是保存，不是检索。
+
+必须区分：
+
+```text
+Storage ≠ Retrieval
+Filesystem ≠ Search
+```
+
+`grep`、`find`、索引、语义搜索等才是检索机制。
+
+类比：
+
+```text
+Filesystem = 书柜
+Retrieval = 去书柜找资料的方法
+```
+
+### Memory：被选择长期保留的过去状态
+
+Memory 不是“全部历史对话”，而是系统认为未来可能有价值，因此选择长期保留的信息。
+
+例如：
+
+- 已确认事实；
+- 用户偏好；
+- 学习进度；
+- 历史架构决策；
+- 可复用经验。
+
+Memory 可以存储在 filesystem、数据库、向量库或其他介质中。因此 Memory 是逻辑概念，Filesystem 是存储 primitive。
+
+Memory 只有在未来被重新选择时，才重新进入 Context Window。
+
+## Context Engineering：write / select / compress / isolate
+
+Context Engineering 的目标不是保存更多，而是管理 working set 的信噪比。
+
+### Write：把信息移出当前 Context，但不丢失
+
+`write` 不是“往 Context 里增加内容”，而是把当前不需要持续占用 Context、但未来可能回看的信息写到外部状态。
+
+例如：
+
+```text
+20,000 token 工具输出
+        ↓ write
+logs/result.txt
+        ↓
+Context 只保留：关键结果 + 文件位置
+```
+
+它解决的是：
+
+> 把“长期保存”与“当前可见”解耦。
+
+### Select：只取当前真正需要的信息
+
+当系统拥有大量文章、历史问答、工具结果和 Memory 时，不应该全部进入 Context。
+
+Select 的目标是：
+
+```text
+External State
+      ↓ select
+Minimum Sufficient Context
+```
+
+RAG 是一种 select implementation，而不是原始需求本身。
+
+原始需求是：
+
+> 从庞大的外部信息中，找到当前任务真正需要的部分。
+
+### Compress：降低粒度，而不是机械缩短
+
+当原始细节未来不太可能逐字需要，但整体语义仍有价值时，可以压缩。
+
+例如把几十轮讨论压成：
+
+```text
+已确认：
+- 使用 filesystem 作为 durable state
+- verification 需要外部证据
+
+未解决：
+- memory lifecycle
+- context reset threshold
+```
+
+Compression 是有损操作，因此不能默认“每轮都压缩”。判断标准应是：
+
+> 未来决策还需要什么粒度的信息？
+
+目标是保留 minimum sufficient context，而不是越短越好。
+
+### Isolate：隔离不同任务的 working set
+
+当两个任务需要的资料、工具输出和中间过程差异很大时，把它们混进同一个 Context 会造成污染。
+
+例如：
+
+```text
+任务 A：精读 Context Engineering
+任务 B：调研 10 个 Agent Framework
+```
+
+可以拆成独立 context / subagent，只共享最小任务契约和最终结构化产物。
+
+一个更合理的生命周期是：
+
+```text
+spawn
+↓
+work in isolation
+↓
+produce artifact
+↓
+validate artifact
+↓
+merge useful result
+↓
+destroy transient context
+```
+
+核心原则是：
+
+> 隔离过程，传递状态。
+
+## 四种典型 Context Failure
+
+长 Context 的问题不仅是长度，还包括内容质量和结构。
+
+### Poisoning：错的信息还活着
+
+例如项目已经确认使用 MySQL，但旧的 PostgreSQL 推断仍长期留在 Context。
+
+旧错误会被后续推理不断继承，形成上下文中毒。
+
+修复方向包括：
+
+- invalidation；
+- provenance；
+- state versioning；
+- 将错误状态移出 active context。
+
+### Distraction：对的信息太多，但当前没用
+
+例如只修登录 Bug，却把整个仓库、全部日志和过去一个月的 PR 都塞入 Context。
+
+信息都可能正确，但会稀释当前任务的信号。
+
+修复方向包括：
+
+- select；
+- compress；
+- isolate。
+
+### Confusion：多个正确方案缺少适用边界
+
+例如同时提供不同版本框架的五套正确实现，但没有说明版本、前置条件和适用范围。
+
+模型可能把不同方案局部拼接成一个实际不存在的组合。
+
+修复重点不是简单缩短，而是补充：
+
+- applicability；
+- version；
+- precondition；
+- priority。
+
+### Clash：指令互相冲突
+
+例如：
+
+```text
+System：删除操作必须先确认
+User：不要问我，直接删除
+```
+
+这类问题即使 Context 很短也存在。它需要明确 instruction hierarchy 和 deterministic policy，不能完全依赖模型临场判断。
+
+可以用四句话记住：
+
+```text
+Poisoning   = 错的信息还活着
+Distraction = 对的信息太多
+Confusion   = 多个合理方案分不清
+Clash       = 指令互相打架
+```
+
+## Context Item 不应该只有文本
+
+为了避免假设逐轮固化，信息最好同时携带状态。
+
+一个 Context Item 可以考虑：
+
+```text
+content
+provenance
+Timestamp
+confidence
+status
+```
+
+其中 `status` 可以区分：
+
+```text
+FACT
+INFERENCE
+OPEN
+STALE
+INVALIDATED
+```
+
+例如：
+
+```text
+content: 项目使用 MySQL 8.0
+provenance: 用户明确确认
+confidence: high
+status: FACT
+```
+
+而旧推断可以保存在 historical state 中：
+
+```text
+content: 项目可能使用 PostgreSQL
+status: INVALIDATED
+```
+
+这样错误信息可以从 Active Context 中移出，但仍保留版本和来源，避免简单删除造成不可追溯。
+
+因此，Context Engineering 不只是“挑文本”，更接近：
+
+> 管理模型运行时的认知状态。
+
+## Planning：把长期目标变成可跟踪的中间状态
+
+Planning 不只是防止模型跑偏。
+
+更完整的作用是：
+
+```text
+Goal
+ ↓
+Decomposition
+ ↓
+Intermediate State
+ ↓
+Progress Tracking
+ ↓
+Replanning
+```
+
+它把无法一次完成的长期目标，转换成可推进、可检查的阶段状态。
+
+今天很多 Harness 会显式维护 plan、todo 或 task graph。未来更强模型可能原生吸收大量 planning scaffolding，但外部系统仍可能保存计划，用于协作、审计和状态恢复。
+
+## Verification：模型说完成，不等于真的完成
+
+Agent 常见失败之一是：
+
+```text
+模型：
+“我觉得已经完成了。”
+```
+
+这不是可靠验证。
+
+生产系统更需要：
+
+```text
+Plan
+ ↓
+Act
+ ↓
+Observe
+ ↓
+Verify / Evaluate
+ ↓
+Recover
+```
+
+验证信号可以有不同强度：
+
+```text
+模型自查
+   ↓
+独立 evaluator
+   ↓
+rubric
+   ↓
+executable test
+   ↓
+deterministic invariant
+```
+
+例如“代码看起来没问题”远弱于真实测试通过。但测试通过也不自动等于用户需求完全满足，因为测试本身可能不完整。
+
+因此 Verification 本身也是完整的架构问题。
+
+## Recovery：验证失败以后怎么办
+
+失败后不应该只有机械 retry。
+
+可能的恢复动作包括：
+
+- **Retry**：临时错误时重新执行同一动作；
+- **Repair**：修复当前产物；
+- **Replan**：承认原策略有问题并改变路径；
+- **Rollback**：撤销已经造成的环境变化；
+- **Resume**：从可靠 checkpoint 继续；
+- **Switch Tool**：更换能力路径；
+- **Ask Human**：在高风险或模糊状态下请求人类介入；
+- **Reset Context**：在上下文严重污染时重新构造工作集。
+
+所以比单纯 ReAct 更稳定的抽象是：
+
+```text
+Observe → Verify → Recover
+```
+
+## Subagent / Multi-Agent：需求是隔离和并行，不是“Agent 越多越好”
+
+复杂任务不等于必须使用 Multi-Agent。
+
+真正的原始需求可能只是：
+
+- context isolation；
+- parallelism；
+- independent working set。
+
+Subagent 是这些需求的一种实现。
+
+Multi-Agent 同时会带来：
+
+- context fragmentation；
+- communication loss；
+- coordination overhead；
+- conflicting decisions；
+- duplicated reasoning；
+- token cost。
+
+因此默认不应该为了“复杂”而引入多个 Agent。很多任务先用：
+
+```text
+single agent
++ good context
++ tools
++ filesystem
+```
+
+就足够。只有 isolation 或 parallelism 的收益明显时，再支付多 Agent 的协调成本。
+
+## 哪些 Harness 能力未来可能被模型吸收
+
+一个非常重要的判断方法是区分：
+
+```text
+Fundamental Requirement
+≠
+Current Implementation
+```
+
+例如：
+
+```text
+原始需求：从庞大资料中选择当前相关信息
+当前实现：RAG / vector DB
+```
+
+RAG 可能变化，但信息选择需求不会消失。
+
+同理：
+
+```text
+原始需求：持续根据环境反馈行动
+当前实现：外部 while loop / ReAct loop
+```
+
+未来模型可能原生具有更强的 recurrent / agentic 能力，外部循环实现可以变化，但闭环控制需求仍存在。
+
+可以用下面的判断区分未来演化。
+
+### 更可能被模型吸收的能力
+
+这些能力主要因为“模型现在还不够稳定”而存在：
+
+- 显式 Planning scaffolding；
+- Reflection；
+- Self-verification prompt；
+- 部分 loop orchestration；
+- 部分 context selection；
+- 部分 tool orchestration；
+- 部分 task decomposition；
+- 部分 Multi-Agent coordination。
+
+### 不会因为模型变聪明而自然消失的能力
+
+这些能力来自外部世界、系统所有者和组织边界：
+
+- External State；
+- Permissions；
+- Sandbox；
+- Authentication；
+- Audit；
+- Business Invariants；
+- Resource Limits；
+- Human Authority；
+- Environment Feedback。
+
+因此，一个很稳定的判断原则是：
+
+> 凡是因为“模型现在不会”而存在的 Harness，都可能随着模型能力提升而收缩；凡是因为“外部世界、组织规则和系统边界客观存在”而产生的 Harness，通常不会因为模型变聪明而消失。
+
+## 把所有部分串成完整闭环
+
+可以把目前的 Agent Harness 心智模型串成：
+
+```text
+                         User Goal
+                             │
+                             ▼
+                       Goal / Plan
+                             │
+                             ▼
+                    Context Selection
+                             │
+          ┌──────────────────┼──────────────────┐
+          │                  │                  │
+       Memory            Filesystem         Knowledge
+          │                  │                  │
+          └──────────── select / retrieve ──────┘
+                             │
+                             ▼
+                      Context Window
+                             │
+                             ▼
+                          Model
+                             │
+                             ▼
+                          Action
+                             │
+                           Tools
+                             │
+                             ▼
+                        Environment
+                             │
+                             ▼
+                        Observation
+                             │
+                             ▼
+                       Verification
+                             │
+                   ┌─────────┴─────────┐
+                   │                   │
+                 Pass                Fail
+                   │                   │
+                   ▼                   ▼
+              Update State         Recovery
+                   │                   │
+                   └──────────┬────────┘
+                              │
+                              ▼
+                          Next Loop
+```
+
+外部还需要三类控制层：
+
+```text
+Governance
+├── permissions
+├── sandbox
+├── approval
+├── privacy
+└── audit
+
+Reliability
+├── retry
+├── timeout
+├── checkpoint
+└── fallback
+
+Economics
+├── token budget
+├── cost limit
+├── rate limit
+└── cache
+```
+
+这时才逐渐接近一个生产级 Agent，而不是简单的 `LLM + while loop + tools`。
+
+## 一组用于分析任何 Harness 的问题
+
+以后阅读 Agent / Harness 文章，可以持续追问：
+
+1. 这个设计解决的原始需求是什么？
+2. 它是在补模型能力，还是解决可靠性、治理或资源约束？
+3. 这里看到的是 fundamental requirement，还是当前 implementation？
+4. 当前一轮模型真正需要看到什么？
+5. 哪些状态应该留在 Context，哪些应该写入外部状态？
+6. 谁拥有规划权、执行权、验证权和终止权？
+7. 模型说“完成”以后，外部系统如何证明它真的完成？
+8. 失败以后应该 retry、repair、replan、rollback 还是 ask human？
+9. 如果模型能力提升十倍，这个 Harness 机制还剩多少必要性？
 
 ## 最终认识
 
-Harness 不是模型外围的一组零散辅助功能，而是让模型成为行动主体的外部认知与控制系统：
+目前可以把整个框架压成几句话：
 
-- Prompt 是当前指令；
-- Context 是工作记忆；
-- Memory 是跨时间保存的信息；
-- Tool 是手和感官；
-- Skill 是程序性经验；
-- Runtime 是持续运行的环境；
-- Agent Loop 是行动循环；
-- Guardrail 是行为边界；
-- Trace 是经历记录；
-- Eval 是能力测量；
-- Harness 负责把这些部分组织成一个闭环。
+- LLM 本质上是一次 inference，不是一个长期运行系统。
+- Agent 的目标，是把 LLM 扩展成围绕目标持续完成现实任务的系统。
+- Tools 让模型能够观察和改变外部环境。
+- Loop 让一次 inference 变成持续的闭环行为。
+- Context 不是系统知道的一切，而是系统此刻决定让模型看到的一切。
+- Filesystem 是持久状态，不等于检索；Memory 是被选择长期保留的过去状态。
+- Context Engineering 的核心是 write / select / compress / isolate，本质是管理 working set 的信噪比。
+- Agent 不能只会执行，还必须 observe → verify → recover。
+- Multi-Agent 不是目的，真正需求通常是 isolation、parallelism 和独立 working set。
+- Harness 不只补模型能力，还承担 Reliability、Governance 和 Economics。
+- Capability scaffolding 会随着模型变强而变化；外部状态、权限、治理、资源边界和真实环境反馈不会因为模型变聪明而自然消失。
 
-因此，可以把 Agent 的实际能力表示为：
+最终可以把 Agent Engineering 理解为：
 
-```text
-Agent 实际能力 = f(模型, Harness, 工具, 上下文, 环境, 评测与迭代)
-```
-
-模型决定局部智能的上限，Harness 则在很大程度上决定这种智能能否稳定、安全地转化为现实结果。
+> 围绕一个概率模型，设计正确的信息边界、状态系统、行动接口、反馈闭环和确定性约束，使它能够把局部智能稳定地转化为现实结果。
 
 ## 参考资料
 
